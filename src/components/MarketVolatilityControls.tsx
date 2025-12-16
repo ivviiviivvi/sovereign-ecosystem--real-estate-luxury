@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Settings, Play, Pause, Zap, Clock, Activity } from 'lucide-react'
+import { Settings, Play, Pause, Zap, Clock, Activity, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react'
 import { Card } from './ui/card'
 import { Slider } from './ui/slider'
 import { Button } from './ui/button'
@@ -8,11 +8,54 @@ import { useMarketConfig } from '@/hooks/use-market-data'
 import { marketDataService } from '@/lib/market-data'
 import { soundManager } from '@/lib/sound-manager'
 
+type PresetScenario = 'bull' | 'bear' | 'crash' | null
+
+interface ScenarioPreset {
+  name: string
+  icon: React.ReactNode
+  volatility: number
+  frequency: number
+  color: string
+  bgColor: string
+  description: string
+}
+
+const scenarios: Record<PresetScenario & string, ScenarioPreset> = {
+  bull: {
+    name: 'Bull Market',
+    icon: <TrendingUp className="w-4 h-4" />,
+    volatility: 0.005,
+    frequency: 0.5,
+    color: 'text-emerald-400',
+    bgColor: 'bg-emerald-500/10 border-emerald-500/30',
+    description: 'Steady upward growth, low volatility'
+  },
+  bear: {
+    name: 'Bear Market',
+    icon: <TrendingDown className="w-4 h-4" />,
+    volatility: 0.015,
+    frequency: 0.3,
+    color: 'text-red-400',
+    bgColor: 'bg-red-500/10 border-red-500/30',
+    description: 'Downward pressure, moderate volatility'
+  },
+  crash: {
+    name: 'Flash Crash',
+    icon: <AlertTriangle className="w-4 h-4" />,
+    volatility: 0.08,
+    frequency: 2.5,
+    color: 'text-amber-400',
+    bgColor: 'bg-amber-500/10 border-amber-500/30',
+    description: 'Extreme volatility, rapid price swings'
+  }
+}
+
 export function MarketVolatilityControls() {
   const config = useMarketConfig()
   const [isExpanded, setIsExpanded] = useState(false)
   const [volatility, setVolatility] = useState(config.volatility)
   const [frequency, setFrequency] = useState(1 / (config.updateFrequency / 1000))
+  const [activeScenario, setActiveScenario] = useState<PresetScenario>(null)
 
   const handleTogglePause = () => {
     soundManager.play('glassTap')
@@ -27,6 +70,7 @@ export function MarketVolatilityControls() {
     const newVolatility = value[0] / 100
     setVolatility(newVolatility)
     marketDataService.setVolatility(newVolatility)
+    setActiveScenario(null)
     soundManager.play('glassTap')
   }
 
@@ -35,6 +79,20 @@ export function MarketVolatilityControls() {
     setFrequency(newFrequency)
     const multiplier = 1 / newFrequency
     marketDataService.setUpdateFrequency(multiplier)
+    setActiveScenario(null)
+    soundManager.play('glassTap')
+  }
+
+  const applyScenario = (scenario: string) => {
+    const preset = scenarios[scenario]
+    if (!preset) return
+    
+    setVolatility(preset.volatility)
+    setFrequency(preset.frequency)
+    marketDataService.setVolatility(preset.volatility)
+    const multiplier = 1 / preset.frequency
+    marketDataService.setUpdateFrequency(multiplier)
+    setActiveScenario(scenario as PresetScenario)
     soundManager.play('glassTap')
   }
 
@@ -107,6 +165,55 @@ export function MarketVolatilityControls() {
 
               <div className="space-y-6">
                 <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Zap className="w-4 h-4 text-champagne-gold" />
+                    <span className="text-sm font-semibold text-foreground">
+                      Scenario Presets
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {Object.entries(scenarios).map(([key, preset]) => (
+                      <motion.button
+                        key={key}
+                        onClick={() => applyScenario(key)}
+                        className={`relative p-3 rounded-lg border transition-all text-left ${
+                          activeScenario === key
+                            ? preset.bgColor
+                            : 'bg-onyx-deep/30 border-border hover:border-champagne-gold/30'
+                        }`}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className={`${preset.color}`}>
+                              {preset.icon}
+                            </div>
+                            <div>
+                              <p className={`text-sm font-bold ${
+                                activeScenario === key ? preset.color : 'text-foreground'
+                              }`}>
+                                {preset.name}
+                              </p>
+                              <p className="text-xs text-slate-grey mt-0.5">
+                                {preset.description}
+                              </p>
+                            </div>
+                          </div>
+                          {activeScenario === key && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className={`w-2 h-2 rounded-full ${preset.color.replace('text-', 'bg-')}`}
+                            />
+                          )}
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-6">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <Zap className="w-4 h-4 text-champagne-gold" />

@@ -186,7 +186,7 @@ class MarketDataService {
   }
 
   setVolatility(level: number) {
-    this.volatility = Math.max(0.001, Math.min(0.1, level))
+    this.volatility = Math.max(0.001, Math.min(0.15, level))
     this.notifyConfigSubscribers()
   }
 
