@@ -67,7 +67,7 @@ function App() {
         <RoleSelector onSelectRole={handleRoleSelect} />
         <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
         <LanguageDetectionBanner />
-        <Toaster theme="dark" position="top-center" />
+        <Toaster theme="light" position="top-center" />
       </>
     )
   }
@@ -78,7 +78,7 @@ function App() {
         <ClientAuth onAuthenticate={handleClientAuth} />
         <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
         <LanguageDetectionBanner />
-        <Toaster theme="dark" position="top-center" />
+        <Toaster theme="light" position="top-center" />
       </>
     )
   }
@@ -95,23 +95,23 @@ function App() {
         <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
         <LanguageDetectionBanner />
         <LiveAlertToast />
-        <Toaster theme="dark" position="top-center" />
+        <Toaster theme="light" position="top-center" />
       </>
     )
   }
 
   return (
     <>
-      <div className="min-h-screen bg-onyx-deep">
+      <div className="min-h-screen bg-gradient-to-br from-pearl-white via-background to-lavender-mist/20">
         <Tabs defaultValue="feed" className="w-full">
-          <TabsList className="w-full justify-center bg-onyx-surface border-b border-border rounded-none sticky top-0 z-40">
-            <TabsTrigger value="feed" className="data-[state=active]:text-champagne-gold">
+          <TabsList className="w-full justify-center bg-card/80 backdrop-blur-xl border-b border-border/50 rounded-none sticky top-0 z-40 shadow-sm">
+            <TabsTrigger value="feed" className="data-[state=active]:text-rose-blush data-[state=active]:bg-rose-blush/10 rounded-full transition-all duration-300">
               Feed
             </TabsTrigger>
-            <TabsTrigger value="market" className="data-[state=active]:text-champagne-gold">
+            <TabsTrigger value="market" className="data-[state=active]:text-rose-blush data-[state=active]:bg-rose-blush/10 rounded-full transition-all duration-300">
               Market
             </TabsTrigger>
-            <TabsTrigger value="vault" className="data-[state=active]:text-champagne-gold">
+            <TabsTrigger value="vault" className="data-[state=active]:text-rose-blush data-[state=active]:bg-rose-blush/10 rounded-full transition-all duration-300">
               Vault
             </TabsTrigger>
             <div className="ml-auto flex items-center gap-2 pr-2">
@@ -141,7 +141,7 @@ function App() {
       <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
       <LanguageDetectionBanner />
       <LiveAlertToast />
-      <Toaster theme="dark" position="top-center" />
+      <Toaster theme="light" position="top-center" />
     </>
   )
 }
@@ -150,13 +150,13 @@ function SoundToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => 
   return (
     <button
       onClick={onToggle}
-      className="fixed top-6 right-6 z-50 w-10 h-10 rounded-full bg-onyx-surface border border-border hover:border-champagne-gold flex items-center justify-center transition-colors"
+      className="fixed top-6 right-6 z-50 w-12 h-12 rounded-full bg-card/80 backdrop-blur-xl border border-border/50 hover:border-rose-blush/50 flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-rose-blush/20 hover:scale-105"
       aria-label={enabled ? 'Mute sounds' : 'Enable sounds'}
     >
       {enabled ? (
-        <Volume2 className="w-5 h-5 text-champagne-gold" />
+        <Volume2 className="w-5 h-5 text-rose-blush" />
       ) : (
-        <VolumeX className="w-5 h-5 text-slate-grey" />
+        <VolumeX className="w-5 h-5 text-muted-foreground" />
       )}
     </button>
   )

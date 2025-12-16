@@ -96,39 +96,40 @@ This platform requires dual user flows (agent/client), sophisticated compliance 
 
 ## Design Direction
 
-The design should evoke the feeling of accessing a private Swiss vault combined with the fluidity of luxury fashion e-commerce. Every interaction should feel weighty and intentional, with rich tactile feedback that makes digital interactions feel physical. The aesthetic balances brutalist minimalism (dark surfaces, generous whitespace) with opulent accents (champagne gold, serif typography, wax seal imagery). Motion should be purposeful and physics-based, never arbitrary or purely decorative.
+The design should evoke the feeling of accessing a private, luxurious sanctuary with a sophisticated feminine aesthetic. Every interaction should feel refined and elegant, with soft tactile feedback that makes digital interactions feel gentle yet intentional. The aesthetic balances modern minimalism (soft surfaces, generous whitespace, flowing curves) with luxurious accents (rose gold, gradient overlays, subtle animations). Motion should be purposeful and graceful, never harsh or mechanical - like silk fabric flowing or rose petals falling.
 
 ## Color Selection
 
-The palette creates dramatic contrast between deep onyx surfaces and champagne gold accents, establishing a sophisticated nocturnal luxury aesthetic.
+The palette creates a soft, ethereal luxury aesthetic with rose-tinted warmth and pearl-like luminosity, establishing a sophisticated feminine nocturnal/daytime hybrid mood.
 
-- **Primary Color**: Champagne Gold `oklch(0.93 0.05 85)` - Communicates wealth, exclusivity, and premium positioning; used sparingly for CTAs, active states, and success indicators
+- **Primary Color**: Rose Blush `oklch(0.65 0.15 340)` - Communicates elegance, sophistication, and feminine luxury; used for CTAs, active states, and key interactive elements
 - **Secondary Colors**: 
-  - Onyx Deep `oklch(0.15 0 0)` - Primary background establishing dark, intimate atmosphere
-  - Onyx Surface `oklch(0.20 0 0)` - Elevated surfaces for cards and panels
-  - Slate Grey `oklch(0.55 0.01 240)` - Secondary text and dividers
-- **Accent Color**: Champagne Gold `oklch(0.93 0.05 85)` - Used for interactive elements, progress indicators, and the circular yield slider fill
+  - Pearl White `oklch(0.97 0.01 320)` - Primary background establishing soft, luminous atmosphere
+  - Champagne Soft `oklch(0.90 0.08 70)` - Warm accent for highlights and secondary surfaces
+  - Lavender Mist `oklch(0.85 0.10 300)` - Ethereal accent for gradients and overlays
+  - Mauve Deep `oklch(0.50 0.08 320)` - Text and subtle contrast elements
+- **Accent Color**: Rose Gold `oklch(0.75 0.12 50)` - Used for gradient blends, progress indicators, and premium feature highlights
 - **Foreground/Background Pairings**: 
-  - Onyx Deep (#0F0F0F / oklch(0.15 0 0)): Champagne Gold text (oklch(0.93 0.05 85)) - Ratio 7.2:1 ✓
-  - Onyx Surface (#1C1C1E / oklch(0.20 0 0)): White text (oklch(0.99 0 0)) - Ratio 14.8:1 ✓
-  - Champagne Gold (oklch(0.93 0.05 85)): Onyx Deep text (oklch(0.15 0 0)) - Ratio 7.2:1 ✓
+  - Pearl White (oklch(0.97 0.01 320)): Mauve Deep text (oklch(0.50 0.08 320)) - Ratio 6.5:1 ✓
+  - Card Background (oklch(0.99 0.005 320)): Foreground text (oklch(0.25 0.02 320)) - Ratio 12.1:1 ✓
+  - Rose Blush (oklch(0.65 0.15 340)): White text (oklch(0.99 0 0)) - Ratio 5.2:1 ✓
 
 ## Font Selection
 
-Typography should establish clear hierarchy between elegant editorial headers and clean, highly readable body text, balancing timeless sophistication with modern clarity.
+Typography should establish a refined, editorial elegance with flowing serifs for headers and clean, lightweight sans-serif for body text, creating a sophisticated luxury magazine aesthetic.
 
 - **Typographic Hierarchy**: 
-  - H1 (Section Titles): Playfair Display Bold / 48px / tracking-tight / leading-none
-  - H2 (Property Titles): Playfair Display SemiBold / 32px / tracking-tight / leading-tight
-  - H3 (Subsections): Playfair Display Medium / 24px / tracking-normal / leading-snug
-  - Body Large (Property Descriptions): Inter Regular / 18px / tracking-normal / leading-relaxed
-  - Body (UI Text): Inter Regular / 16px / tracking-normal / leading-normal
-  - Small (Labels/Captions): Inter Medium / 14px / tracking-wide / uppercase / leading-tight
-  - Numbers (Financial Data): Inter SemiBold / Tabular / varies by context
+  - H1 (Section Titles): Cormorant Light / 60px / tracking-wide / leading-tight / font-weight: 300
+  - H2 (Property Titles): Cormorant Regular / 40px / tracking-wide / leading-tight / font-weight: 400
+  - H3 (Subsections): Cormorant Medium / 28px / tracking-normal / leading-snug / font-weight: 500
+  - Body Large (Property Descriptions): Outfit Light / 18px / tracking-normal / leading-relaxed / font-weight: 300
+  - Body (UI Text): Outfit Light / 16px / tracking-wide / leading-normal / font-weight: 300
+  - Small (Labels/Captions): Outfit Light / 13px / tracking-widest / uppercase / leading-tight / font-weight: 300
+  - Numbers (Financial Data): Outfit Regular / Tabular / varies by context / font-weight: 400
 
 ## Animations
 
-Animations should feel physics-based and luxurious, with easing curves that mimic real-world materials - heavy metal vault doors, smooth silk fabrics, and weighted wax seals. Key moments include: the vault unlocking sequence (2s orchestrated animation with sound), the wax seal stamp (0.8s with bounce), pinch-to-summarize (0.3s spring animation), pull-to-search (rubber band effect), and the circular yield slider (real-time with gradient fill). All transitions use custom cubic-bezier curves to avoid generic easing. Micro-interactions like button presses have 100ms feedback, while major state changes take 400-600ms to feel substantial.
+Animations should feel graceful and fluid, with easing curves that mimic flowing fabrics, floating petals, and gentle breezes. Key moments include: the vault unlocking sequence (2s orchestrated animation with sound), the wax seal stamp (0.8s with gentle settle), pinch-to-summarize (0.3s spring animation), pull-to-search (silk ribbon effect), and the circular yield slider (real-time with gradient shimmer). All transitions use elegant cubic-bezier curves (e.g., [0.16, 1, 0.3, 1]) to create smooth, organic motion. Micro-interactions like button presses have 100ms feedback with subtle scale transforms, while major state changes take 400-600ms with graceful fade and slide combinations. Hover states include gentle lifts and soft glow effects.
 
 ## Component Selection
 
@@ -152,37 +153,37 @@ Animations should feel physics-based and luxurious, with easing curves that mimi
   - Masonry grid layout for vault documents
   - Custom map placeholder component for risk visualization
 - **States**: 
-  - Buttons: Default (subtle glow), Hover (champagne border), Active (scale down 0.95 + sound), Disabled (50% opacity)
-  - Inputs: Default (slate border), Focus (champagne ring + glow), Error (red border + shake), Success (green checkmark)
-  - Cards: Default (elevated shadow), Hover (lift + glow), Pinched (scale 0.7 + overlay), Active (selected border)
+  - Buttons: Default (soft glow), Hover (rose blush border + lift), Active (scale down 0.98 + sound), Disabled (50% opacity)
+  - Inputs: Default (soft border), Focus (rose blush ring + glow), Error (red border + gentle shake), Success (green checkmark)
+  - Cards: Default (elevated shadow), Hover (soft lift + glow), Pinched (scale 0.7 + overlay), Active (selected gradient border)
 - **Icon Selection**: 
-  - Shield (compliance protection)
-  - AlertTriangle (risk flags)
-  - Lock (vault security)
-  - Eye/EyeOff (document privacy toggle)
-  - Calendar (lease expiration)
-  - TrendingUp (yield calculations)
-  - MessageCircle (AI concierge)
-  - Download (document actions)
-  - Clock (time-bomb links)
-  - Sparkles (curated badge accent)
-  - Settings (market controls)
-  - Zap (volatility indicator)
-  - Activity (market activity)
-  - Play/Pause (market simulation control)
-  - History (historical replay access)
-  - SkipBack/SkipForward (replay navigation)
-  - RotateCcw (reset to live mode)
-  - Calendar (time range selection)
-  - AlertCircle (pattern analysis)
-  - Mail (email notifications)
-  - MessageSquare (SMS notifications)
-  - Send (delivery settings)
-  - CheckCircle/XCircle/Clock (delivery status indicators)
-  - GitCompare (property comparison)
-  - Check (selection confirmation)
-  - Award (best value indicator)
-  - Lightbulb (considerations)
+  - Shield (compliance protection) - strokeWidth: 1.5
+  - AlertTriangle (risk flags) - strokeWidth: 1.5
+  - Lock (vault security) - strokeWidth: 1.5
+  - Eye/EyeOff (document privacy toggle) - strokeWidth: 1.5
+  - Calendar (lease expiration) - strokeWidth: 1.5
+  - TrendingUp (yield calculations) - strokeWidth: 1.5
+  - MessageCircle (AI concierge) - strokeWidth: 1.5
+  - Download (document actions) - strokeWidth: 1.5
+  - Clock (time-bomb links) - strokeWidth: 1.5
+  - Sparkles (curated badge accent) - strokeWidth: 1.5
+  - Settings (market controls) - strokeWidth: 1.5
+  - Zap (volatility indicator) - strokeWidth: 1.5
+  - Activity (market activity) - strokeWidth: 1.5
+  - Play/Pause (market simulation control) - strokeWidth: 1.5
+  - History (historical replay access) - strokeWidth: 1.5
+  - SkipBack/SkipForward (replay navigation) - strokeWidth: 1.5
+  - RotateCcw (reset to live mode) - strokeWidth: 1.5
+  - Calendar (time range selection) - strokeWidth: 1.5
+  - AlertCircle (pattern analysis) - strokeWidth: 1.5
+  - Mail (email notifications) - strokeWidth: 1.5
+  - MessageSquare (SMS notifications) - strokeWidth: 1.5
+  - Send (delivery settings) - strokeWidth: 1.5
+  - CheckCircle/XCircle/Clock (delivery status indicators) - strokeWidth: 1.5
+  - GitCompare (property comparison) - strokeWidth: 1.5
+  - Check (selection confirmation) - strokeWidth: 1.5
+  - Award (best value indicator) - strokeWidth: 1.5
+  - Lightbulb (considerations) - strokeWidth: 1.5
 - **Spacing**: 
   - Container padding: px-6 (mobile), px-12 (desktop)
   - Card gaps: gap-4 (tight grids), gap-8 (property cards)

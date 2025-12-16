@@ -44,12 +44,12 @@ export function ClientFeed({ properties, onBack }: ClientFeedProps) {
   }
 
   return (
-    <div className="min-h-screen bg-onyx-deep overflow-hidden">
-      <header className="absolute top-0 left-0 right-0 z-50 p-6 flex items-center justify-between bg-gradient-to-b from-onyx-deep/80 to-transparent">
-        <h1 className="text-2xl font-bold text-champagne-gold">Sovereign</h1>
+    <div className="min-h-screen bg-gradient-to-br from-pearl-white via-background to-lavender-mist/20 overflow-hidden">
+      <header className="absolute top-0 left-0 right-0 z-50 p-6 flex items-center justify-between bg-gradient-to-b from-card/60 via-card/40 to-transparent backdrop-blur-sm">
+        <h1 className="text-2xl font-light text-foreground tracking-wide">Sovereign</h1>
         <button
           onClick={onBack}
-          className="text-slate-grey hover:text-champagne-gold transition-colors text-sm"
+          className="text-muted-foreground hover:text-rose-blush transition-colors text-sm font-light"
         >
           Exit
         </button>
@@ -81,8 +81,8 @@ export function ClientFeed({ properties, onBack }: ClientFeedProps) {
             key={index}
             className={`h-2 rounded-full transition-all duration-300 ${
               index === currentIndex
-                ? 'w-8 bg-champagne-gold'
-                : 'w-2 bg-slate-grey/50'
+                ? 'w-8 bg-gradient-to-r from-rose-blush to-rose-gold'
+                : 'w-2 bg-muted-foreground/30'
             }`}
           />
         ))}
@@ -101,7 +101,7 @@ interface PropertyCardProps {
 
 function PropertyCard({ property, onPinch, pinchScale, onToggleCalculator, showCalculator }: PropertyCardProps) {
   return (
-    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-onyx-surface shadow-2xl">
+    <div className="relative w-full h-full rounded-3xl overflow-hidden bg-card/80 backdrop-blur-xl shadow-2xl shadow-rose-blush/10">
       {property.isCurated && <CuratedBadge />}
 
       <div className="relative h-3/5">
@@ -110,15 +110,15 @@ function PropertyCard({ property, onPinch, pinchScale, onToggleCalculator, showC
           alt={property.title}
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-onyx-surface via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/30 to-transparent" />
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 p-8 space-y-6">
         <div>
-          <h2 className="text-4xl font-bold text-foreground mb-2 leading-tight">
+          <h2 className="text-4xl font-light text-foreground mb-2 leading-tight tracking-wide">
             {property.title}
           </h2>
-          <p className="text-slate-grey text-lg">
+          <p className="text-muted-foreground text-lg font-light">
             {property.city}, {property.state}
           </p>
         </div>
@@ -126,7 +126,7 @@ function PropertyCard({ property, onPinch, pinchScale, onToggleCalculator, showC
         <div className="space-y-4">
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-slate-grey text-sm uppercase tracking-wider mb-2">Live Price</p>
+              <p className="text-muted-foreground text-xs uppercase tracking-widest mb-2 font-light">Live Price</p>
               <LivePriceDisplay
                 propertyId={property.id}
                 originalPrice={property.price}
@@ -135,19 +135,19 @@ function PropertyCard({ property, onPinch, pinchScale, onToggleCalculator, showC
               />
             </div>
             <div className="text-right">
-              <p className="text-slate-grey text-xs uppercase tracking-wider mb-2">24h Trend</p>
+              <p className="text-muted-foreground text-xs uppercase tracking-widest mb-2 font-light">24h Trend</p>
               <PriceSparkline propertyId={property.id} width={100} height={40} />
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-border/50">
+          <div className="flex items-center justify-between pt-4 border-t border-border/30">
             <div>
-              <p className="text-slate-grey text-sm uppercase tracking-wider mb-1">Yield</p>
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-muted-foreground text-xs uppercase tracking-widest mb-1 font-light">Yield</p>
+              <p className="text-2xl font-light text-foreground">
                 {property.capRate ? `${property.capRate}%` : '—'}
               </p>
             </div>
-            <div className="flex gap-6 text-slate-grey">
+            <div className="flex gap-6 text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Home className="w-5 h-5" />
                 <span>{property.bedrooms} bed</span>

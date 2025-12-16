@@ -35,18 +35,18 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
   }
 
   return (
-    <div className="min-h-screen bg-onyx-deep text-foreground">
-      <header className="border-b border-border bg-onyx-surface sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-pearl-white via-background to-lavender-mist/20 text-foreground">
+      <header className="border-b border-border/30 bg-card/60 backdrop-blur-xl sticky top-0 z-40 shadow-sm">
+        <div className="container mx-auto px-6 py-5 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-champagne-gold">Portfolio Shield</h1>
-            <p className="text-slate-grey text-sm">Compliance Intelligence Dashboard</p>
+            <h1 className="text-4xl font-light text-foreground tracking-wide">Portfolio Shield</h1>
+            <p className="text-muted-foreground text-sm font-light tracking-wide">Compliance Intelligence Dashboard</p>
           </div>
           <div className="flex items-center gap-4">
             <PatternAlertNotifications />
             <button
               onClick={onBack}
-              className="text-slate-grey hover:text-champagne-gold transition-colors"
+              className="text-muted-foreground hover:text-rose-blush transition-colors font-light"
             >
               Switch View
             </button>
