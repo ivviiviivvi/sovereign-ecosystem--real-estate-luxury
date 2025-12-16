@@ -2,7 +2,7 @@ import { PatternAlert, AlertPriority } from './pattern-alerts'
 
 export type { AlertPriority }
 
-export type DeliveryChannel = 'email' | 'sms' | 'in-app'
+export type DeliveryChannel = 'email' | 'sms' | 'whatsapp' | 'telegram' | 'in-app'
 
 export interface NotificationPreferences {
   email: {
@@ -13,6 +13,16 @@ export interface NotificationPreferences {
   sms: {
     enabled: boolean
     phoneNumber: string
+    priorities: AlertPriority[]
+  }
+  whatsapp: {
+    enabled: boolean
+    phoneNumber: string
+    priorities: AlertPriority[]
+  }
+  telegram: {
+    enabled: boolean
+    username: string
     priorities: AlertPriority[]
   }
 }
@@ -38,6 +48,16 @@ class NotificationDeliveryService {
       enabled: false,
       phoneNumber: '',
       priorities: ['critical']
+    },
+    whatsapp: {
+      enabled: false,
+      phoneNumber: '',
+      priorities: ['critical', 'high']
+    },
+    telegram: {
+      enabled: false,
+      username: '',
+      priorities: ['critical', 'high']
     }
   }
 
@@ -59,6 +79,20 @@ class NotificationDeliveryService {
         this.preferences.sms.phoneNumber &&
         this.preferences.sms.priorities.includes(alert.priority)) {
       const log = await this.sendSMS(alert)
+      logs.push(log)
+    }
+
+    if (this.preferences.whatsapp.enabled && 
+        this.preferences.whatsapp.phoneNumber &&
+        this.preferences.whatsapp.priorities.includes(alert.priority)) {
+      const log = await this.sendWhatsApp(alert)
+      logs.push(log)
+    }
+
+    if (this.preferences.telegram.enabled && 
+        this.preferences.telegram.username &&
+        this.preferences.telegram.priorities.includes(alert.priority)) {
+      const log = await this.sendTelegram(alert)
       logs.push(log)
     }
 
@@ -149,6 +183,78 @@ Return a JSON object with:
     return log
   }
 
+  private async sendWhatsApp(alert: PatternAlert): Promise<DeliveryLog> {
+    const log: DeliveryLog = {
+      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      alertId: alert.id,
+      channel: 'whatsapp',
+      destination: this.obfuscatePhone(this.preferences.whatsapp.phoneNumber),
+      timestamp: Date.now(),
+      status: 'pending'
+    }
+
+    try {
+      const whatsappBody = this.formatWhatsAppBody(alert)
+
+      const promptText = `You are simulating a WhatsApp Business API delivery service. Generate a realistic delivery confirmation for a WhatsApp message:
+To: ${this.preferences.whatsapp.phoneNumber}
+Message: ${whatsappBody}
+
+Return a JSON object with:
+{
+  "messageId": "a unique WhatsApp message ID (format: wamid.XXX)",
+  "status": "sent",
+  "timestamp": "${new Date().toISOString()}"
+}`
+
+      const response = await window.spark.llm(promptText, 'gpt-4o-mini', true)
+      const result = JSON.parse(response)
+
+      log.status = 'sent'
+    } catch (error) {
+      log.status = 'failed'
+      log.errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    }
+
+    return log
+  }
+
+  private async sendTelegram(alert: PatternAlert): Promise<DeliveryLog> {
+    const log: DeliveryLog = {
+      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      alertId: alert.id,
+      channel: 'telegram',
+      destination: this.obfuscateTelegramUsername(this.preferences.telegram.username),
+      timestamp: Date.now(),
+      status: 'pending'
+    }
+
+    try {
+      const telegramBody = this.formatTelegramBody(alert)
+
+      const promptText = `You are simulating a Telegram Bot API delivery service. Generate a realistic delivery confirmation for a Telegram message:
+To: @${this.preferences.telegram.username}
+Message: ${telegramBody}
+
+Return a JSON object with:
+{
+  "messageId": "a unique Telegram message ID (numeric)",
+  "status": "sent",
+  "timestamp": "${new Date().toISOString()}"
+}`
+
+      const response = await window.spark.llm(promptText, 'gpt-4o-mini', true)
+      const result = JSON.parse(response)
+
+      log.status = 'sent'
+    } catch (error) {
+      log.status = 'failed'
+      log.errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    }
+
+    return log
+  }
+
   private formatEmailBody(alert: PatternAlert): string {
     return `
 ${alert.title}
@@ -181,6 +287,47 @@ This is an automated alert from The Sovereign Ecosystem.
     return `${emoji} ${alert.title}${change} - ${alert.pattern} pattern detected (${alert.confidence.toFixed(0)}% confidence)`
   }
 
+  private formatWhatsAppBody(alert: PatternAlert): string {
+    const emoji = this.getPriorityEmoji(alert.priority)
+    const change = alert.metrics?.priceChange 
+      ? ` ${alert.metrics.priceChange >= 0 ? '📈' : '📉'} ${alert.metrics.priceChange >= 0 ? '+' : ''}${alert.metrics.priceChange.toFixed(2)}%`
+      : ''
+    
+    return `${emoji} *${alert.title}*${change}
+
+${alert.message}
+
+📊 Pattern: ${alert.pattern.toUpperCase()}
+🎯 Confidence: ${alert.confidence.toFixed(0)}%
+${alert.metrics?.volatility ? `⚡ Volatility: ${alert.metrics.volatility.toFixed(2)}` : ''}
+${alert.metrics?.volume ? `📦 Volume: ${alert.metrics.volume}` : ''}
+
+🕐 ${new Date(alert.timestamp).toLocaleTimeString()}
+
+_The Sovereign Ecosystem - Market Alert_`
+  }
+
+  private formatTelegramBody(alert: PatternAlert): string {
+    const emoji = this.getPriorityEmoji(alert.priority)
+    const change = alert.metrics?.priceChange 
+      ? ` ${alert.metrics.priceChange >= 0 ? '📈' : '📉'} ${alert.metrics.priceChange >= 0 ? '+' : ''}${alert.metrics.priceChange.toFixed(2)}%`
+      : ''
+    
+    return `${emoji} <b>${alert.title}</b>${change}
+
+${alert.message}
+
+<b>Pattern Details:</b>
+• Pattern: <code>${alert.pattern.toUpperCase()}</code>
+• Confidence: <code>${alert.confidence.toFixed(0)}%</code>
+${alert.metrics?.volatility ? `• Volatility: <code>${alert.metrics.volatility.toFixed(2)}</code>` : ''}
+${alert.metrics?.volume ? `• Volume: <code>${alert.metrics.volume}</code>` : ''}
+
+🕐 ${new Date(alert.timestamp).toLocaleString()}
+
+<i>The Sovereign Ecosystem - Market Alert</i>`
+  }
+
   private getPriorityEmoji(priority: AlertPriority): string {
     switch (priority) {
       case 'critical': return '🚨'
@@ -203,6 +350,11 @@ This is an automated alert from The Sovereign Ecosystem.
     return `***-***-${digits.slice(-4)}`
   }
 
+  private obfuscateTelegramUsername(username: string): string {
+    if (username.length <= 3) return '***'
+    return `@${username.substring(0, 3)}***`
+  }
+
   getPreferences(): NotificationPreferences {
     return { ...this.preferences }
   }
@@ -210,7 +362,9 @@ This is an automated alert from The Sovereign Ecosystem.
   updatePreferences(updates: Partial<NotificationPreferences>) {
     this.preferences = {
       email: { ...this.preferences.email, ...updates.email },
-      sms: { ...this.preferences.sms, ...updates.sms }
+      sms: { ...this.preferences.sms, ...updates.sms },
+      whatsapp: { ...this.preferences.whatsapp, ...updates.whatsapp },
+      telegram: { ...this.preferences.telegram, ...updates.telegram }
     }
     this.notifyPreferencesSubscribers()
   }
@@ -258,6 +412,12 @@ This is an automated alert from The Sovereign Ecosystem.
   validatePhone(phone: string): boolean {
     const digits = phone.replace(/\D/g, '')
     return digits.length >= 10 && digits.length <= 15
+  }
+
+  validateTelegramUsername(username: string): boolean {
+    const cleanUsername = username.replace(/^@/, '')
+    const usernameRegex = /^[a-zA-Z0-9_]{5,32}$/
+    return usernameRegex.test(cleanUsername)
   }
 }
 

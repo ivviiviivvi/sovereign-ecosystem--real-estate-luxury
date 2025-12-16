@@ -209,7 +209,7 @@ export function PatternAlertSettings() {
             }}
           >
             <Send className="w-4 h-4" />
-            Configure Email/SMS Delivery
+            Configure Delivery Channels (Email/SMS/WhatsApp/Telegram)
           </Button>
 
           <Separator />

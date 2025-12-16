@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Mail, MessageSquare, Send, CheckCircle, XCircle, Clock, Trash2 } from 'lucide-react'
+import { Mail, MessageSquare, Send, CheckCircle, XCircle, Clock, Trash2, MessageCircle, Send as SendIcon } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -27,8 +27,12 @@ export function NotificationDeliverySettings({ open, onOpenChange }: Notificatio
   )
   const [emailInput, setEmailInput] = useState(preferences.email.address)
   const [phoneInput, setPhoneInput] = useState(preferences.sms.phoneNumber)
+  const [whatsappInput, setWhatsappInput] = useState(preferences.whatsapp.phoneNumber)
+  const [telegramInput, setTelegramInput] = useState(preferences.telegram.username)
   const [emailError, setEmailError] = useState('')
   const [phoneError, setPhoneError] = useState('')
+  const [whatsappError, setWhatsappError] = useState('')
+  const [telegramError, setTelegramError] = useState('')
 
   useEffect(() => {
     const unsubPrefs = notificationDeliveryService.subscribePreferences(setPreferences)
@@ -43,6 +47,8 @@ export function NotificationDeliverySettings({ open, onOpenChange }: Notificatio
   useEffect(() => {
     setEmailInput(preferences.email.address)
     setPhoneInput(preferences.sms.phoneNumber)
+    setWhatsappInput(preferences.whatsapp.phoneNumber)
+    setTelegramInput(preferences.telegram.username)
   }, [preferences])
 
   const handleEmailToggle = (enabled: boolean) => {
@@ -157,6 +163,118 @@ export function NotificationDeliverySettings({ open, onOpenChange }: Notificatio
     toast.success('Phone number saved')
   }
 
+  const handleWhatsAppToggle = (enabled: boolean) => {
+    if (enabled && !notificationDeliveryService.validatePhone(whatsappInput)) {
+      setWhatsappError('Please enter a valid phone number')
+      return
+    }
+
+    notificationDeliveryService.updatePreferences({
+      whatsapp: {
+        ...preferences.whatsapp,
+        enabled,
+        phoneNumber: whatsappInput
+      }
+    })
+
+    toast.success(enabled ? 'WhatsApp notifications enabled' : 'WhatsApp notifications disabled')
+  }
+
+  const handleTelegramToggle = (enabled: boolean) => {
+    if (enabled && !notificationDeliveryService.validateTelegramUsername(telegramInput)) {
+      setTelegramError('Please enter a valid Telegram username')
+      return
+    }
+
+    notificationDeliveryService.updatePreferences({
+      telegram: {
+        ...preferences.telegram,
+        enabled,
+        username: telegramInput
+      }
+    })
+
+    toast.success(enabled ? 'Telegram notifications enabled' : 'Telegram notifications disabled')
+  }
+
+  const handleWhatsAppPriorityToggle = (priority: AlertPriority) => {
+    const currentPriorities = preferences.whatsapp.priorities
+    const newPriorities = currentPriorities.includes(priority)
+      ? currentPriorities.filter(p => p !== priority)
+      : [...currentPriorities, priority]
+
+    notificationDeliveryService.updatePreferences({
+      whatsapp: {
+        ...preferences.whatsapp,
+        priorities: newPriorities
+      }
+    })
+  }
+
+  const handleTelegramPriorityToggle = (priority: AlertPriority) => {
+    const currentPriorities = preferences.telegram.priorities
+    const newPriorities = currentPriorities.includes(priority)
+      ? currentPriorities.filter(p => p !== priority)
+      : [...currentPriorities, priority]
+
+    notificationDeliveryService.updatePreferences({
+      telegram: {
+        ...preferences.telegram,
+        priorities: newPriorities
+      }
+    })
+  }
+
+  const handleWhatsAppChange = (value: string) => {
+    setWhatsappInput(value)
+    setWhatsappError('')
+    
+    if (value && !notificationDeliveryService.validatePhone(value)) {
+      setWhatsappError('Invalid phone number')
+    }
+  }
+
+  const handleTelegramChange = (value: string) => {
+    setTelegramInput(value)
+    setTelegramError('')
+    
+    if (value && !notificationDeliveryService.validateTelegramUsername(value)) {
+      setTelegramError('Invalid Telegram username (5-32 characters, alphanumeric and underscore)')
+    }
+  }
+
+  const handleSaveWhatsApp = () => {
+    if (!notificationDeliveryService.validatePhone(whatsappInput)) {
+      setWhatsappError('Please enter a valid phone number')
+      return
+    }
+
+    notificationDeliveryService.updatePreferences({
+      whatsapp: {
+        ...preferences.whatsapp,
+        phoneNumber: whatsappInput
+      }
+    })
+
+    toast.success('WhatsApp number saved')
+  }
+
+  const handleSaveTelegram = () => {
+    if (!notificationDeliveryService.validateTelegramUsername(telegramInput)) {
+      setTelegramError('Please enter a valid Telegram username')
+      return
+    }
+
+    notificationDeliveryService.updatePreferences({
+      telegram: {
+        ...preferences.telegram,
+        username: telegramInput
+      }
+    })
+
+    toast.success('Telegram username saved')
+  }
+
   const handleClearLogs = () => {
     notificationDeliveryService.clearDeliveryLogs()
     toast.success('Delivery logs cleared')
@@ -170,6 +288,21 @@ export function NotificationDeliverySettings({ open, onOpenChange }: Notificatio
         return <XCircle className="w-4 h-4 text-red-400" />
       case 'pending':
         return <Clock className="w-4 h-4 text-yellow-400" />
+    }
+  }
+
+  const getChannelIcon = (channel: DeliveryLog['channel']) => {
+    switch (channel) {
+      case 'email':
+        return <Mail className="w-4 h-4 text-champagne-gold" />
+      case 'sms':
+        return <MessageSquare className="w-4 h-4 text-champagne-gold" />
+      case 'whatsapp':
+        return <MessageCircle className="w-4 h-4 text-champagne-gold" />
+      case 'telegram':
+        return <SendIcon className="w-4 h-4 text-champagne-gold" />
+      default:
+        return <Send className="w-4 h-4 text-champagne-gold" />
     }
   }
 
@@ -200,7 +333,7 @@ export function NotificationDeliverySettings({ open, onOpenChange }: Notificatio
             Notification Delivery Settings
           </DialogTitle>
           <DialogDescription className="text-slate-grey">
-            Configure email and SMS delivery for critical market alerts
+            Configure email, SMS, WhatsApp, and Telegram delivery for critical market alerts
           </DialogDescription>
         </DialogHeader>
 
@@ -359,6 +492,160 @@ export function NotificationDeliverySettings({ open, onOpenChange }: Notificatio
             </div>
           </Card>
 
+          <Card className="p-6 bg-onyx-deep border-border">
+            <div className="flex items-center gap-3 mb-4">
+              <MessageCircle className="w-5 h-5 text-champagne-gold" />
+              <h3 className="text-lg font-bold text-foreground">WhatsApp Notifications</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="whatsapp" className="text-sm text-slate-grey mb-2 block">
+                  WhatsApp Phone Number
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="whatsapp"
+                    type="tel"
+                    value={whatsappInput}
+                    onChange={(e) => handleWhatsAppChange(e.target.value)}
+                    placeholder="+1 (555) 123-4567"
+                    className={`flex-1 ${whatsappError ? 'border-red-500' : ''}`}
+                    disabled={preferences.whatsapp.enabled}
+                  />
+                  {!preferences.whatsapp.enabled && (
+                    <Button
+                      onClick={handleSaveWhatsApp}
+                      disabled={!!whatsappError || !whatsappInput}
+                      size="sm"
+                    >
+                      Save
+                    </Button>
+                  )}
+                </div>
+                {whatsappError && (
+                  <p className="text-xs text-red-400 mt-1">{whatsappError}</p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm text-foreground">Enable WhatsApp Alerts</Label>
+                  <p className="text-xs text-slate-grey mt-1">
+                    Receive critical alerts via WhatsApp Business
+                  </p>
+                </div>
+                <Switch
+                  checked={preferences.whatsapp.enabled}
+                  onCheckedChange={handleWhatsAppToggle}
+                  disabled={!whatsappInput}
+                />
+              </div>
+
+              {preferences.whatsapp.enabled && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="pt-4 border-t border-border"
+                >
+                  <Label className="text-sm text-slate-grey mb-3 block">
+                    Alert Priorities to Deliver
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {priorities.map((priority) => (
+                      <Button
+                        key={priority}
+                        variant={preferences.whatsapp.priorities.includes(priority) ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleWhatsAppPriorityToggle(priority)}
+                        className="capitalize"
+                      >
+                        {priority}
+                      </Button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-onyx-deep border-border">
+            <div className="flex items-center gap-3 mb-4">
+              <SendIcon className="w-5 h-5 text-champagne-gold" />
+              <h3 className="text-lg font-bold text-foreground">Telegram Notifications</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="telegram" className="text-sm text-slate-grey mb-2 block">
+                  Telegram Username
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="telegram"
+                    type="text"
+                    value={telegramInput}
+                    onChange={(e) => handleTelegramChange(e.target.value)}
+                    placeholder="@username or username"
+                    className={`flex-1 ${telegramError ? 'border-red-500' : ''}`}
+                    disabled={preferences.telegram.enabled}
+                  />
+                  {!preferences.telegram.enabled && (
+                    <Button
+                      onClick={handleSaveTelegram}
+                      disabled={!!telegramError || !telegramInput}
+                      size="sm"
+                    >
+                      Save
+                    </Button>
+                  )}
+                </div>
+                {telegramError && (
+                  <p className="text-xs text-red-400 mt-1">{telegramError}</p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm text-foreground">Enable Telegram Alerts</Label>
+                  <p className="text-xs text-slate-grey mt-1">
+                    Receive critical alerts via Telegram Bot
+                  </p>
+                </div>
+                <Switch
+                  checked={preferences.telegram.enabled}
+                  onCheckedChange={handleTelegramToggle}
+                  disabled={!telegramInput}
+                />
+              </div>
+
+              {preferences.telegram.enabled && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="pt-4 border-t border-border"
+                >
+                  <Label className="text-sm text-slate-grey mb-3 block">
+                    Alert Priorities to Deliver
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {priorities.map((priority) => (
+                      <Button
+                        key={priority}
+                        variant={preferences.telegram.priorities.includes(priority) ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleTelegramPriorityToggle(priority)}
+                        className="capitalize"
+                      >
+                        {priority}
+                      </Button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </Card>
+
           <Separator />
 
           <div>
@@ -405,11 +692,7 @@ export function NotificationDeliverySettings({ open, onOpenChange }: Notificatio
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                              {log.channel === 'email' ? (
-                                <Mail className="w-4 h-4 text-champagne-gold" />
-                              ) : (
-                                <MessageSquare className="w-4 h-4 text-champagne-gold" />
-                              )}
+                              {getChannelIcon(log.channel)}
                               <span className="text-sm font-semibold text-foreground capitalize">
                                 {log.channel}
                               </span>
@@ -452,7 +735,7 @@ export function NotificationDeliverySettings({ open, onOpenChange }: Notificatio
               <li className="flex gap-2">
                 <span className="text-champagne-gold">•</span>
                 <span>
-                  Email and SMS notifications are sent for alerts matching your selected priorities
+                  Notifications are sent for alerts matching your selected priorities across all enabled channels
                 </span>
               </li>
               <li className="flex gap-2">
@@ -464,13 +747,25 @@ export function NotificationDeliverySettings({ open, onOpenChange }: Notificatio
               <li className="flex gap-2">
                 <span className="text-champagne-gold">•</span>
                 <span>
-                  Email notifications include detailed metrics and full alert context
+                  WhatsApp messages include rich formatting with emojis and detailed metrics
                 </span>
               </li>
               <li className="flex gap-2">
                 <span className="text-champagne-gold">•</span>
                 <span>
-                  Contact information is stored locally and never shared with third parties
+                  Telegram messages support HTML formatting and provide full alert context
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-champagne-gold">•</span>
+                <span>
+                  Email notifications include the most comprehensive metrics and analysis
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-champagne-gold">•</span>
+                <span>
+                  All contact information is stored locally and never shared with third parties
                 </span>
               </li>
             </ul>
