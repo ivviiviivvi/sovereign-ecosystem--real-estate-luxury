@@ -1,7 +1,11 @@
 import { useState } from 'react'
-import { motion, useMotionValue, PanInfo } from 'framer-motion'
+import { motion, useMotionValue, PanInfo, AnimatePresence } from 'framer-motion'
 import { Property } from '@/lib/types'
 import { FlippablePropertyCard } from './FlippablePropertyCard'
+import { ARPropertyViewer } from './ARPropertyViewer'
+import { PropertyComparisonSlider } from './PropertyComparisonSlider'
+import { Button } from './ui/button'
+import { Camera, ArrowLeftRight } from 'lucide-react'
 import { soundManager } from '@/lib/sound-manager'
 
 interface ClientFeedProps {
@@ -11,6 +15,8 @@ interface ClientFeedProps {
 
 export function ClientFeed({ properties, onBack }: ClientFeedProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [arProperty, setArProperty] = useState<Property | null>(null)
+  const [comparisonPair, setComparisonPair] = useState<[Property, Property] | null>(null)
   const y = useMotionValue(0)
 
   const currentProperty = properties[currentIndex]
@@ -22,6 +28,19 @@ export function ClientFeed({ properties, onBack }: ClientFeedProps) {
     } else if (info.offset.y > 100 && currentIndex > 0) {
       soundManager.play('glassTap')
       setCurrentIndex(currentIndex - 1)
+    }
+  }
+
+  const handleARView = () => {
+    setArProperty(currentProperty)
+    soundManager.play('glassTap')
+  }
+
+  const handleComparisonSlider = () => {
+    if (properties.length > 1) {
+      const otherIndex = currentIndex === 0 ? 1 : currentIndex - 1
+      setComparisonPair([currentProperty, properties[otherIndex]])
+      soundManager.play('glassTap')
     }
   }
 
@@ -67,6 +86,45 @@ export function ClientFeed({ properties, onBack }: ClientFeedProps) {
           />
         ))}
       </div>
+
+      <div className="absolute bottom-24 left-0 right-0 flex justify-center gap-4 z-50">
+        <Button
+          onClick={handleARView}
+          className="bg-card/90 backdrop-blur-xl border border-border/40 hover:border-rose-blush/50 dark:hover:border-moonlit-lavender/50 shadow-lg flex items-center gap-2"
+        >
+          <Camera className="w-4 h-4" />
+          AR View
+        </Button>
+        {properties.length > 1 && (
+          <Button
+            onClick={handleComparisonSlider}
+            variant="secondary"
+            className="bg-card/90 backdrop-blur-xl border border-border/40 hover:border-rose-blush/50 dark:hover:border-moonlit-lavender/50 shadow-lg flex items-center gap-2"
+          >
+            <ArrowLeftRight className="w-4 h-4" />
+            Compare
+          </Button>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {arProperty && (
+          <ARPropertyViewer
+            property={arProperty}
+            onClose={() => setArProperty(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {comparisonPair && (
+          <PropertyComparisonSlider
+            propertyA={comparisonPair[0]}
+            propertyB={comparisonPair[1]}
+            onClose={() => setComparisonPair(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

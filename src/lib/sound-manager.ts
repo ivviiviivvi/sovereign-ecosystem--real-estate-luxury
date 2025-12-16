@@ -46,6 +46,19 @@ class SoundManager {
       ),
       shimmer: this.createBeep(isLight ? 1200 : 800, 0.15, 'triangle'),
       softClick: this.createBeep(isLight ? 700 : 500, 0.08, 'sine'),
+      success: this.createSequence(
+        isLight
+          ? [
+              { freq: 520, duration: 0.1 },
+              { freq: 660, duration: 0.1 },
+              { freq: 820, duration: 0.15 }
+            ]
+          : [
+              { freq: 350, duration: 0.1 },
+              { freq: 440, duration: 0.1 },
+              { freq: 550, duration: 0.15 }
+            ]
+      ),
     }
 
     Object.entries(soundEffects).forEach(([name, audio]) => {

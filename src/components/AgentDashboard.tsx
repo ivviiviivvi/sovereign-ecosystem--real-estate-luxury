@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Property } from '@/lib/types'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
-import { AlertTriangle, Calendar, Shield, TrendingUp } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { Button } from './ui/button'
+import { AlertTriangle, Calendar, Shield, TrendingUp, Camera, ArrowLeftRight } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { AnimatedPropertyCard } from './AnimatedPropertyCard'
 import { MarketTicker } from './MarketTicker'
 import { MarketActivityIndicator } from './MarketActivityIndicator'
@@ -13,6 +14,9 @@ import { PortfolioValueTracker } from './PortfolioValueTracker'
 import { MarketVolatilityControls } from './MarketVolatilityControls'
 import { PatternAlertNotifications } from './PatternAlertNotifications'
 import { PropertyComparisonSelector, PropertyCardWithSelection } from './PropertyComparisonSelector'
+import { ARPropertyViewer } from './ARPropertyViewer'
+import { PropertyComparisonSlider } from './PropertyComparisonSlider'
+import { soundManager } from '@/lib/sound-manager'
 
 interface AgentDashboardProps {
   properties: Property[]
@@ -23,6 +27,8 @@ interface AgentDashboardProps {
 
 export function AgentDashboard({ properties, watchlistProperties, riskProperties, onBack }: AgentDashboardProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [arProperty, setArProperty] = useState<Property | null>(null)
+  const [comparisonPair, setComparisonPair] = useState<[Property, Property] | null>(null)
 
   const toggleProperty = (id: string) => {
     setSelectedIds(prev => {
@@ -33,6 +39,16 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
       }
       return prev
     })
+  }
+
+  const handleARView = (property: Property) => {
+    setArProperty(property)
+    soundManager.play('glassTap')
+  }
+
+  const handleComparisonSlider = (propA: Property, propB: Property) => {
+    setComparisonPair([propA, propB])
+    soundManager.play('glassTap')
   }
 
   return (
@@ -98,7 +114,20 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
             ) : (
               <div className="grid gap-4">
                 {watchlistProperties.map((property, index) => (
-                  <PropertyCard key={property.id} property={property} index={index} selectedIds={selectedIds} onToggle={toggleProperty} />
+                  <PropertyCard 
+                    key={property.id} 
+                    property={property} 
+                    index={index} 
+                    selectedIds={selectedIds} 
+                    onToggle={toggleProperty}
+                    onARView={handleARView}
+                    onCompare={(prop) => {
+                      if (properties.length > 1) {
+                        const otherProp = properties.find(p => p.id !== prop.id)
+                        if (otherProp) handleComparisonSlider(prop, otherProp)
+                      }
+                    }}
+                  />
                 ))}
               </div>
             )}
@@ -116,7 +145,21 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
             ) : (
               <div className="grid gap-4">
                 {riskProperties.map((property, index) => (
-                  <PropertyCard key={property.id} property={property} index={index} showMap selectedIds={selectedIds} onToggle={toggleProperty} />
+                  <PropertyCard 
+                    key={property.id} 
+                    property={property} 
+                    index={index} 
+                    showMap 
+                    selectedIds={selectedIds} 
+                    onToggle={toggleProperty}
+                    onARView={handleARView}
+                    onCompare={(prop) => {
+                      if (properties.length > 1) {
+                        const otherProp = properties.find(p => p.id !== prop.id)
+                        if (otherProp) handleComparisonSlider(prop, otherProp)
+                      }
+                    }}
+                  />
                 ))}
               </div>
             )}
@@ -129,7 +172,20 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
             </h2>
             <div className="grid gap-4">
               {properties.map((property, index) => (
-                <PropertyCard key={property.id} property={property} index={index} selectedIds={selectedIds} onToggle={toggleProperty} />
+                <PropertyCard 
+                  key={property.id} 
+                  property={property} 
+                  index={index} 
+                  selectedIds={selectedIds} 
+                  onToggle={toggleProperty}
+                  onARView={handleARView}
+                  onCompare={(prop) => {
+                    if (properties.length > 1) {
+                      const otherProp = properties.find(p => p.id !== prop.id)
+                      if (otherProp) handleComparisonSlider(prop, otherProp)
+                    }
+                  }}
+                />
               ))}
             </div>
           </section>
@@ -138,6 +194,25 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
 
       <PropertyComparisonSelector properties={properties} initialSelectedIds={selectedIds} />
       <MarketVolatilityControls />
+
+      <AnimatePresence>
+        {arProperty && (
+          <ARPropertyViewer
+            property={arProperty}
+            onClose={() => setArProperty(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {comparisonPair && (
+          <PropertyComparisonSlider
+            propertyA={comparisonPair[0]}
+            propertyB={comparisonPair[1]}
+            onClose={() => setComparisonPair(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -163,12 +238,14 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
   )
 }
 
-function PropertyCard({ property, index, showMap, selectedIds, onToggle }: { 
+function PropertyCard({ property, index, showMap, selectedIds, onToggle, onARView, onCompare }: { 
   property: Property; 
   index: number; 
   showMap?: boolean;
   selectedIds?: string[];
   onToggle?: (id: string) => void;
+  onARView?: (property: Property) => void;
+  onCompare?: (property: Property) => void;
 }) {
   const isSelected = selectedIds?.includes(property.id) || false
   const disabled = !isSelected && (selectedIds?.length || 0) >= 4
@@ -215,7 +292,7 @@ function PropertyCard({ property, index, showMap, selectedIds, onToggle }: {
             </div>
 
             {property.complianceFlags.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2 mb-3">
                 {property.complianceFlags.map((flag, i) => (
                   <motion.div
                     key={i}
@@ -233,6 +310,33 @@ function PropertyCard({ property, index, showMap, selectedIds, onToggle }: {
                     <p className="text-sm text-foreground">{flag.message}</p>
                   </motion.div>
                 ))}
+              </div>
+            )}
+
+            {(onARView || onCompare) && (
+              <div className="flex gap-2 mt-4 pt-4 border-t border-border">
+                {onARView && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onARView(property)}
+                    className="flex items-center gap-2"
+                  >
+                    <Camera className="w-4 h-4" />
+                    AR View
+                  </Button>
+                )}
+                {onCompare && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onCompare(property)}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowLeftRight className="w-4 h-4" />
+                    Compare
+                  </Button>
+                )}
               </div>
             )}
 

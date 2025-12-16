@@ -48,11 +48,26 @@ This platform requires dual user flows (agent/client), sophisticated compliance 
 - Success criteria: Calculations are accurate, slider responds smoothly to drag, visual feedback is immediate
 
 **AI Concierge**
-- Functionality: Intelligent recommendation engine with floating chat interface that provides real-time, personalized property suggestions based on user preferences, portfolio analysis, and market conditions. **Side-by-side property comparison** allows selecting up to 4 properties to compare across all key metrics (price, cap rate, ROI, size, amenities) with AI-generated insights highlighting the best values, important considerations, potential risks, and strategic recommendations.
-- Purpose: Delivers proactive insights including property matches, lease expiration alerts, refinancing opportunities, and portfolio diversification advice. **Property comparison provides comprehensive side-by-side analysis with intelligent recommendations to help users make data-driven investment decisions.**
-- Trigger: Floating action button in bottom right (shows notification badge when new insights available). **Property selection checkboxes appear on property cards in agent dashboard** - click to select up to 4 properties, then click "Compare" in the floating comparison panel.
-- Progression: Client taps button → Concierge panel slides up → Displays categorized insights (recommendations, alerts, opportunities, advice) sorted by urgency → Each insight shows property details, match score, reasons, and action buttons → Client can customize preferences via settings icon → Insights refresh in real-time as properties and preferences change. **For comparison: Select properties via checkboxes → Selection counter appears in floating panel (bottom-right) → Click "Compare" button → Full-screen comparison modal opens → AI generates insights automatically → View grid comparison (all metrics side-by-side) or detailed view (full property cards with all data) → Toggle between views → Best values highlighted with champagne gold rings → AI insights categorized by type (winner, consideration, warning, recommendation) → Click regenerate to get fresh AI analysis → Remove properties from comparison or close modal to return**
-- Success criteria: Recommendations are contextually relevant with high match scores (80+), urgency levels are accurate, preference customization affects future recommendations, interface feels conversational and helpful. **Comparison: Up to 4 properties can be selected simultaneously, selection state persists while browsing, best values accurately identified per metric, AI insights are relevant and actionable (4-6 insights covering all categories), grid/detailed views render correctly, modal is responsive and performs smoothly, removing properties updates comparison in real-time**
+- Functionality: Intelligent recommendation engine with floating chat interface that provides real-time, personalized property suggestions based on user preferences, portfolio analysis, and market conditions. **Side-by-side property comparison** allows selecting up to 4 properties to compare across all key metrics (price, cap rate, ROI, size, amenities) with AI-generated insights highlighting the best values, important considerations, potential risks, and strategic recommendations. **AR Property Visualization** enables viewing property overlays through device camera with interactive controls for scale, rotation, and positioning, allowing users to visualize properties in real-world spaces with detailed property information displayed on the overlay.
+- Purpose: Delivers proactive insights including property matches, lease expiration alerts, refinancing opportunities, and portfolio diversification advice. **Property comparison provides comprehensive side-by-side analysis with intelligent recommendations to help users make data-driven investment decisions. AR visualization offers immersive property previews that help users understand scale, proportions, and spatial relationships in real-world contexts.**
+- Trigger: Floating action button in bottom right (shows notification badge when new insights available). **Property selection checkboxes appear on property cards in agent dashboard** - click to select up to 4 properties, then click "Compare" in the floating comparison panel. **AR view accessible via "AR View" button on property cards or floating button in client feed.**
+- Progression: Client taps button → Concierge panel slides up → Displays categorized insights (recommendations, alerts, opportunities, advice) sorted by urgency → Each insight shows property details, match score, reasons, and action buttons → Client can customize preferences via settings icon → Insights refresh in real-time as properties and preferences change. **For comparison: Select properties via checkboxes → Selection counter appears in floating panel (bottom-right) → Click "Compare" button → Full-screen comparison modal opens → AI generates insights automatically → View grid comparison (all metrics side-by-side) or detailed view (full property cards with all data) → Toggle between views → Best values highlighted with champagne gold rings → AI insights categorized by type (winner, consideration, warning, recommendation) → Click regenerate to get fresh AI analysis → Remove properties from comparison or close modal to return. For AR: Click "AR View" button → Camera permission prompt → Camera feed appears with property overlay → Drag overlay to reposition → Use sliders to adjust scale (0.5x-3x) and rotation (0°-360°) → Toggle overlay visibility → View property details on overlay card → Toggle fullscreen mode → Reset view returns to default positioning → Close returns to dashboard.**
+- Success criteria: Recommendations are contextually relevant with high match scores (80+), urgency levels are accurate, preference customization affects future recommendations, interface feels conversational and helpful. **Comparison: Up to 4 properties can be selected simultaneously, selection state persists while browsing, best values accurately identified per metric, AI insights are relevant and actionable (4-6 insights covering all categories), grid/detailed views render correctly, modal is responsive and performs smoothly, removing properties updates comparison in real-time. AR: Camera access granted successfully, overlay renders smoothly at 60fps, scale and rotation controls respond instantly, drag repositioning feels natural and responsive, property details are clearly visible on overlay, fullscreen toggle works without interrupting camera feed, reset button returns to centered default view, all UI controls remain accessible and responsive.**
+
+**Property Comparison Slider with Synchronized Flip Animations**
+- Functionality: Interactive side-by-side property comparison with draggable slider divider and synchronized card flip animations revealing detailed metrics. Users drag the vertical slider to reveal more of one property or the other, with smooth clip-path transitions. Clicking either property card flips it to reveal detailed comparison metrics on the back, with option to synchronize flips across both cards simultaneously for parallel exploration.
+- Purpose: Provides an engaging, visual way to compare two properties directly, with the ability to see how they differ at a glance through the slider interaction and access detailed metrics through card flips without losing context.
+- Trigger: "Compare" button on property cards when viewing property details, or from client feed comparison interface. Requires selecting exactly 2 properties for slider mode (vs 2-4 for grid comparison).
+- Progression: Click "Compare" on property card → If another property available, comparison slider modal opens → Full-screen split view with draggable slider in center → Drag slider left/right to reveal more of Property A or B → Slider shows real-time percentage split → Click either card to flip and reveal detailed metrics → Back of card shows all comparison data with indicators (better/worse/neutral) for each metric → Click "Sync Flip" button to flip both cards simultaneously → Both cards animate in sequence → Close modal returns to previous view
+- Success criteria: Slider drag is smooth and responsive with no jank, clip-path transitions feel natural, percentage indicator updates in real-time, card flips complete in 600ms with proper 3D perspective, synchronized flip maintains proper timing (300ms stagger between cards), all metrics display correctly with accurate comparison indicators, mobile touch drag works equivalently to desktop mouse drag, comparison state persists during flip animations
+
+**AR Property Visualization with Device Camera**
+- Functionality: Augmented reality property preview using device camera feed with interactive property card overlay. Renders live camera feed to canvas with property image and details overlaid in glassmorphic card with AR targeting corners. Users can drag to reposition, adjust scale (0.5x-3x), and rotate (0-360°) the overlay using sliders. Toggle overlay visibility, fullscreen mode, and info panel independently.
+- Purpose: Allows users to visualize properties in real-world spaces through their device camera, helping understand scale, proportions, and how the property might fit in different contexts. Creates an immersive, modern property exploration experience.
+- Trigger: "AR View" button on property cards in agent dashboard and client feed. Requires device camera access permission.
+- Progression: Click "AR View" button → Permission prompt for camera access → Camera feed initializes and displays → Property overlay appears centered with targeting corners → Info panel explains controls → Drag overlay anywhere on screen to reposition → Adjust scale slider (0.5x-3x) to resize → Adjust rotation slider (0-360°) to rotate → Toggle overlay visibility on/off → Toggle fullscreen for immersive view → Reset button returns to default centered position → Close button stops camera and returns to previous view
+- Success criteria: Camera access granted successfully, live feed renders at 60fps to canvas without lag, overlay renders with proper glassmorphic styling and shadows, drag repositioning feels natural with no delay, scale slider responds instantly (0.5-3x range), rotation slider provides smooth 360° rotation, overlay visibility toggle maintains camera feed, fullscreen toggle works without interrupting camera, reset button returns to exact center position, all controls remain accessible in all modes, camera stops completely when closing AR view, works on both mobile and desktop with appropriate optimizations
+
 
 **Private Vault (Document Management)**
 - Functionality: Secure document storage with time-limited sharing and privacy controls
@@ -104,6 +119,16 @@ This platform requires dual user flows (agent/client), sophisticated compliance 
 - **Theme Preference on First Load**: Applies saved theme immediately on mount, no flash of wrong theme during hydration
 - **Dark Mode Particle Rendering**: Particles adapt color hue and blend mode appropriately, maintain performance in both themes
 - **Tab Switching During Theme Change**: Theme transition continues smoothly even when switching tabs, completes when tab regains focus
+- **AR Camera Access Denied**: Show clear error message with retry option and close button, explain camera requirement for AR feature
+- **AR Camera Not Available**: Detect if device has no camera and disable/hide AR buttons, show tooltip explaining requirement
+- **AR Performance Issues**: Monitor frame rate and automatically reduce overlay complexity if dropping below 30fps
+- **AR During Device Rotation**: Handle orientation change gracefully, maintain overlay position relative to viewport center
+- **AR Overlay Out of Bounds**: Constrain drag area to keep overlay within visible canvas bounds, prevent losing overlay off-screen
+- **Comparison Slider with One Property**: Disable "Compare" button when only one property exists, show tooltip explaining need for 2+ properties
+- **Comparison Slider Drag Performance**: Optimize clip-path updates to maintain 60fps during slider drag on low-end devices
+- **Comparison Slider Card Flip During Drag**: Prevent flip interaction while slider is being dragged to avoid conflicting gestures
+- **Comparison Slider Missing Data**: Handle properties with incomplete data gracefully, show "N/A" for missing metrics, don't break comparison
+- **Synchronized Flip Already Flipped**: If one or both cards already flipped, sync flip reverses appropriately or flips to opposite side intelligently
 
 ## Design Direction
 
@@ -180,6 +205,9 @@ Animations should feel graceful and fluid, with easing curves that mimic flowing
   - **Framer Motion floating elements with independent animation loops**
   - **Animated property card wrapper with staggered entrance/exit**
   - **Theme toggle with rotating icon animations**
+  - **AR camera overlay with Canvas 2D rendering for live video feed compositing**
+  - **Property comparison slider with Framer Motion drag and clip-path masking**
+  - **Synchronized 3D card flip animations using CSS transforms and perspective**
 - **States**: 
   - Buttons: Default (soft glow), Hover (rose blush border + lift), Active (scale down 0.98 + sound), Disabled (50% opacity)
   - Inputs: Default (soft border), Focus (rose blush ring + glow), Error (red border + gentle shake), Success (green checkmark)
@@ -212,8 +240,14 @@ Animations should feel graceful and fluid, with easing curves that mimic flowing
   - Check (selection confirmation) - strokeWidth: 1.5
   - Award (best value indicator) - strokeWidth: 1.5
   - Lightbulb (considerations) - strokeWidth: 1.5
-  - Moon (dark mode) - strokeWidth: 1.5, fill variant
-  - Sun (light mode) - strokeWidth: 1.5, fill variant
+  - Camera (AR view) - strokeWidth: 1.5
+  - ArrowLeftRight (comparison slider) - strokeWidth: 1.5
+  - RefreshCw (synchronized flip) - strokeWidth: 1.5
+  - ZoomIn/ZoomOut (AR scale controls) - strokeWidth: 1.5
+  - Eye/EyeOff (AR overlay toggle) - strokeWidth: 1.5
+  - Maximize2/Minimize2 (fullscreen toggle) - strokeWidth: 1.5
+  - RotateCcw (AR reset view) - strokeWidth: 1.5
+  - ChevronLeft/ChevronRight (slider direction indicators) - strokeWidth: 1.5
 - **Spacing**: 
   - Container padding: px-6 (mobile), px-12 (desktop)
   - Card gaps: gap-4 (tight grids), gap-8 (property cards)
