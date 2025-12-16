@@ -3,6 +3,11 @@ import { Card } from './ui/card'
 import { Badge } from './ui/badge'
 import { AlertTriangle, Calendar, Shield, TrendingUp } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { MarketTicker } from './MarketTicker'
+import { MarketActivityIndicator } from './MarketActivityIndicator'
+import { LivePriceDisplay } from './LivePriceDisplay'
+import { PriceSparkline } from './PriceSparkline'
+import { PortfolioValueTracker } from './PortfolioValueTracker'
 
 interface AgentDashboardProps {
   properties: Property[]
@@ -27,10 +32,15 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
             Switch View
           </button>
         </div>
+        <MarketTicker />
       </header>
 
       <main className="container mx-auto px-6 py-8">
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        <div className="mb-8">
+          <PortfolioValueTracker properties={properties} />
+        </div>
+
+        <div className="grid lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             icon={<Shield className="w-6 h-6" />}
             label="Total Properties"
@@ -49,6 +59,9 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
             value={riskProperties.length}
             color="text-destructive"
           />
+          <div className="lg:row-span-1">
+            <MarketActivityIndicator />
+          </div>
         </div>
 
         <div className="space-y-8">
@@ -141,17 +154,22 @@ function PropertyCard({ property, index, showMap }: { property: Property; index:
           />
           
           <div className="flex-1">
-            <div className="flex items-start justify-between mb-2">
+            <div className="flex items-start justify-between mb-3">
               <div>
                 <h3 className="text-xl font-bold text-foreground mb-1">{property.title}</h3>
                 <p className="text-slate-grey text-sm">
                   {property.address}, {property.city}, {property.state} {property.zip}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-champagne-gold font-semibold text-lg">
-                  ${property.price.toLocaleString()}
-                </p>
+              <div className="text-right space-y-2">
+                <LivePriceDisplay
+                  propertyId={property.id}
+                  originalPrice={property.price}
+                  size="sm"
+                  showTrend={true}
+                  compact={false}
+                />
+                <PriceSparkline propertyId={property.id} width={120} height={30} />
               </div>
             </div>
 

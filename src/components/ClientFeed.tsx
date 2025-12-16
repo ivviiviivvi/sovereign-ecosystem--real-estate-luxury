@@ -4,6 +4,8 @@ import { Property } from '@/lib/types'
 import { CuratedBadge } from './CuratedBadge'
 import { TrendingUp, Home, Maximize } from 'lucide-react'
 import { CircularYieldSlider } from './CircularYieldSlider'
+import { LivePriceDisplay } from './LivePriceDisplay'
+import { PriceSparkline } from './PriceSparkline'
 import { soundManager } from '@/lib/sound-manager'
 
 interface ClientFeedProps {
@@ -121,29 +123,40 @@ function PropertyCard({ property, onPinch, pinchScale, onToggleCalculator, showC
           </p>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-slate-grey text-sm uppercase tracking-wider mb-1">Price</p>
-            <p className="text-3xl font-bold text-champagne-gold">
-              ${(property.price / 1000000).toFixed(2)}M
-            </p>
+        <div className="space-y-4">
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-slate-grey text-sm uppercase tracking-wider mb-2">Live Price</p>
+              <LivePriceDisplay
+                propertyId={property.id}
+                originalPrice={property.price}
+                size="lg"
+                showTrend={true}
+              />
+            </div>
+            <div className="text-right">
+              <p className="text-slate-grey text-xs uppercase tracking-wider mb-2">24h Trend</p>
+              <PriceSparkline propertyId={property.id} width={100} height={40} />
+            </div>
           </div>
-          <div>
-            <p className="text-slate-grey text-sm uppercase tracking-wider mb-1">Yield</p>
-            <p className="text-3xl font-bold text-foreground">
-              {property.capRate ? `${property.capRate}%` : '—'}
-            </p>
-          </div>
-        </div>
 
-        <div className="flex gap-6 text-slate-grey">
-          <div className="flex items-center gap-2">
-            <Home className="w-5 h-5" />
-            <span>{property.bedrooms} bed</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Maximize className="w-5 h-5" />
-            <span>{property.sqft.toLocaleString()} sqft</span>
+          <div className="flex items-center justify-between pt-4 border-t border-border/50">
+            <div>
+              <p className="text-slate-grey text-sm uppercase tracking-wider mb-1">Yield</p>
+              <p className="text-2xl font-bold text-foreground">
+                {property.capRate ? `${property.capRate}%` : '—'}
+              </p>
+            </div>
+            <div className="flex gap-6 text-slate-grey">
+              <div className="flex items-center gap-2">
+                <Home className="w-5 h-5" />
+                <span>{property.bedrooms} bed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Maximize className="w-5 h-5" />
+                <span>{property.sqft.toLocaleString()} sqft</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -167,10 +180,22 @@ function PropertyCard({ property, onPinch, pinchScale, onToggleCalculator, showC
         >
           <h3 className="text-2xl font-bold text-champagne-gold mb-6">Financial Summary</h3>
           <div className="space-y-4">
-            <DataRow label="Purchase Price" value={`$${property.price.toLocaleString()}`} />
+            <div className="py-3 border-b border-border">
+              <span className="text-slate-grey uppercase tracking-wide text-sm block mb-2">Live Price</span>
+              <LivePriceDisplay
+                propertyId={property.id}
+                originalPrice={property.price}
+                size="md"
+                showTrend={true}
+              />
+            </div>
             <DataRow label="Current Rent" value={property.currentRent ? `$${property.currentRent.toLocaleString()}/mo` : '—'} />
             <DataRow label="Cap Rate" value={property.capRate ? `${property.capRate}%` : '—'} />
             <DataRow label="ROI (Annual)" value={property.roi ? `${property.roi}%` : '—'} />
+            <div className="pt-4">
+              <span className="text-slate-grey uppercase tracking-wide text-sm block mb-2">Price Trend</span>
+              <PriceSparkline propertyId={property.id} width={280} height={60} />
+            </div>
           </div>
         </motion.div>
       )}

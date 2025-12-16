@@ -12,6 +12,13 @@ This platform requires dual user flows (agent/client), sophisticated compliance 
 
 ## Essential Features
 
+**Live Market Data Feeds**
+- Functionality: Real-time price tracking with simulated market movements, trend indicators, sparkline charts, and market index tickers showing property values updating every 3 seconds
+- Purpose: Provides agents and clients with dynamic market intelligence to make informed investment decisions and track portfolio performance
+- Trigger: Automatically initializes when properties load, runs continuously in background
+- Progression: Properties load → Market data service initializes → Price updates begin streaming → Live price displays animate changes → Sparkline charts update → Market tickers scroll across dashboard → Trend indicators show up/down/stable movements
+- Success criteria: Prices update smoothly without jank, animations feel premium and intentional, trend indicators accurately reflect price movements, market sentiment calculations are correct, no performance degradation with multiple properties
+
 **Agent Dashboard (Portfolio Shield)**
 - Functionality: Blind database architecture that separates client PII (local) from asset data (cloud) with automated compliance checking
 - Purpose: Enables agents to monitor portfolio risk and regulatory compliance without exposing sensitive client information

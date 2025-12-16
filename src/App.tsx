@@ -3,12 +3,14 @@ import { useKV } from '@github/spark/hooks'
 import { Toaster } from 'sonner'
 import { Property, UserRole, Document } from './lib/types'
 import { analyzeProperty, getWatchlistProperties, getRiskMapProperties } from './lib/compliance'
+import { marketDataService } from './lib/market-data'
 import { RoleSelector } from './components/RoleSelector'
 import { ClientAuth } from './components/ClientAuth'
 import { AgentDashboard } from './components/AgentDashboard'
 import { ClientFeed } from './components/ClientFeed'
 import { AIConcierge } from './components/AIConcierge'
 import { PrivateVault } from './components/PrivateVault'
+import { MarketOverview } from './components/MarketOverview'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
 import { Volume2, VolumeX } from 'lucide-react'
 import { soundManager } from './lib/sound-manager'
@@ -19,6 +21,16 @@ function App() {
   const [userRole, setUserRole] = useState<UserRole | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
+
+  useEffect(() => {
+    if (properties && properties.length > 0) {
+      marketDataService.initialize(properties)
+    }
+
+    return () => {
+      marketDataService.cleanup()
+    }
+  }, [properties])
 
   const analyzedProperties = (properties || []).map(analyzeProperty)
   const watchlistProperties = getWatchlistProperties(analyzedProperties)
@@ -89,6 +101,9 @@ function App() {
             <TabsTrigger value="feed" className="data-[state=active]:text-champagne-gold">
               Feed
             </TabsTrigger>
+            <TabsTrigger value="market" className="data-[state=active]:text-champagne-gold">
+              Market
+            </TabsTrigger>
             <TabsTrigger value="vault" className="data-[state=active]:text-champagne-gold">
               Vault
             </TabsTrigger>
@@ -96,6 +111,12 @@ function App() {
 
           <TabsContent value="feed" className="m-0">
             <ClientFeed properties={analyzedProperties} onBack={handleBack} />
+          </TabsContent>
+
+          <TabsContent value="market" className="m-0">
+            <div className="container mx-auto p-6">
+              <MarketOverview properties={analyzedProperties} />
+            </div>
           </TabsContent>
 
           <TabsContent value="vault" className="m-0">
