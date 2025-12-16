@@ -4,6 +4,7 @@ import { Property } from '@/lib/types'
 import { FlippablePropertyCard } from './FlippablePropertyCard'
 import { ARPropertyViewer } from './ARPropertyViewer'
 import { PropertyComparisonSlider } from './PropertyComparisonSlider'
+import { PropertySelector } from './PropertySelector'
 import { Button } from './ui/button'
 import { Camera, ArrowLeftRight } from 'lucide-react'
 import { soundManager } from '@/lib/sound-manager'
@@ -17,6 +18,8 @@ export function ClientFeed({ properties, onBack }: ClientFeedProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [arProperty, setArProperty] = useState<Property | null>(null)
   const [comparisonPair, setComparisonPair] = useState<[Property, Property] | null>(null)
+  const [showARSelector, setShowARSelector] = useState(false)
+  const [showComparisonSelector, setShowComparisonSelector] = useState(false)
   const y = useMotionValue(0)
 
   const currentProperty = properties[currentIndex]
@@ -31,17 +34,32 @@ export function ClientFeed({ properties, onBack }: ClientFeedProps) {
     }
   }
 
-  const handleARView = () => {
-    setArProperty(currentProperty)
+  const handleARViewClick = () => {
+    if (properties.length === 1) {
+      setArProperty(properties[0])
+    } else {
+      setShowARSelector(true)
+    }
     soundManager.play('glassTap')
   }
 
-  const handleComparisonSlider = () => {
-    if (properties.length > 1) {
-      const otherIndex = currentIndex === 0 ? 1 : currentIndex - 1
-      setComparisonPair([currentProperty, properties[otherIndex]])
-      soundManager.play('glassTap')
+  const handleComparisonClick = () => {
+    if (properties.length === 2) {
+      setComparisonPair([properties[0], properties[1]])
+    } else if (properties.length > 2) {
+      setShowComparisonSelector(true)
     }
+    soundManager.play('glassTap')
+  }
+
+  const handleARPropertySelected = (selectedProperties: Property[]) => {
+    setArProperty(selectedProperties[0])
+    setShowARSelector(false)
+  }
+
+  const handleComparisonPropertiesSelected = (selectedProperties: Property[]) => {
+    setComparisonPair([selectedProperties[0], selectedProperties[1]])
+    setShowComparisonSelector(false)
   }
 
   return (
@@ -89,7 +107,7 @@ export function ClientFeed({ properties, onBack }: ClientFeedProps) {
 
       <div className="absolute bottom-24 left-0 right-0 flex justify-center gap-4 z-50">
         <Button
-          onClick={handleARView}
+          onClick={handleARViewClick}
           className="bg-card/90 backdrop-blur-xl border border-border/40 hover:border-rose-blush/50 dark:hover:border-moonlit-lavender/50 shadow-lg flex items-center gap-2"
         >
           <Camera className="w-4 h-4" />
@@ -97,7 +115,7 @@ export function ClientFeed({ properties, onBack }: ClientFeedProps) {
         </Button>
         {properties.length > 1 && (
           <Button
-            onClick={handleComparisonSlider}
+            onClick={handleComparisonClick}
             variant="secondary"
             className="bg-card/90 backdrop-blur-xl border border-border/40 hover:border-rose-blush/50 dark:hover:border-moonlit-lavender/50 shadow-lg flex items-center gap-2"
           >
@@ -106,6 +124,30 @@ export function ClientFeed({ properties, onBack }: ClientFeedProps) {
           </Button>
         )}
       </div>
+
+      <AnimatePresence>
+        {showARSelector && (
+          <PropertySelector
+            properties={properties}
+            mode="ar"
+            maxSelection={1}
+            onConfirm={handleARPropertySelected}
+            onClose={() => setShowARSelector(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showComparisonSelector && (
+          <PropertySelector
+            properties={properties}
+            mode="comparison"
+            maxSelection={2}
+            onConfirm={handleComparisonPropertiesSelected}
+            onClose={() => setShowComparisonSelector(false)}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {arProperty && (

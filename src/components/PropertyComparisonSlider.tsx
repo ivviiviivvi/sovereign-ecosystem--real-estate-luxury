@@ -1,16 +1,18 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence, PanInfo } from 'framer-motion'
-import { Property } from '@/lib/types'
+import { useKV } from '@github/spark/hooks'
+import { Property, Document } from '@/lib/types'
 import { 
   X, ArrowLeftRight, TrendingUp, TrendingDown, Home, DollarSign, 
   Maximize2, Calendar, MapPin, Check, Sparkles, ChevronLeft, ChevronRight,
-  RefreshCw
+  RefreshCw, Save, Download
 } from 'lucide-react'
 import { Card } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { Progress } from './ui/progress'
 import { soundManager } from '@/lib/sound-manager'
+import { toast } from 'sonner'
 
 interface PropertyComparisonSliderProps {
   propertyA: Property
@@ -24,6 +26,8 @@ export function PropertyComparisonSlider({ propertyA, propertyB, onClose }: Prop
   const [flippedSide, setFlippedSide] = useState<'left' | 'right' | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const [documents, setDocuments] = useKV<Document[]>('documents', [])
+  const [isSaving, setIsSaving] = useState(false)
 
   const handleDrag = (_: any, info: PanInfo) => {
     if (!containerRef.current) return
@@ -60,6 +64,140 @@ export function PropertyComparisonSlider({ propertyA, propertyB, onClose }: Prop
     }, 300)
 
     setTimeout(() => setIsFlipping(false), 900)
+  }
+
+  const captureSnapshot = async () => {
+    const container = containerRef.current
+    if (!container) return
+
+    setIsSaving(true)
+    soundManager.play('glassTap')
+
+    try {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      canvas.width = container.offsetWidth
+      canvas.height = container.offsetHeight
+
+      ctx.fillStyle = '#000000'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      const propertyAImg = new Image()
+      propertyAImg.crossOrigin = 'anonymous'
+      propertyAImg.src = propertyA.imageUrl
+
+      const propertyBImg = new Image()
+      propertyBImg.crossOrigin = 'anonymous'
+      propertyBImg.src = propertyB.imageUrl
+
+      await Promise.all([
+        new Promise((resolve) => {
+          propertyAImg.onload = resolve
+          if (propertyAImg.complete) resolve(null)
+        }),
+        new Promise((resolve) => {
+          propertyBImg.onload = resolve
+          if (propertyBImg.complete) resolve(null)
+        })
+      ])
+
+      const clipWidth = (canvas.width * sliderPosition) / 100
+      ctx.drawImage(propertyAImg, 0, 0, clipWidth, canvas.height, 0, 0, clipWidth, canvas.height)
+      ctx.drawImage(propertyBImg, clipWidth, 0, canvas.width - clipWidth, canvas.height, clipWidth, 0, canvas.width - clipWidth, canvas.height)
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(clipWidth, 0)
+      ctx.lineTo(clipWidth, canvas.height)
+      ctx.stroke()
+
+      const dataUrl = canvas.toDataURL('image/png')
+      
+      const newDocument: Document = {
+        id: `comparison-snapshot-${Date.now()}`,
+        propertyId: `${propertyA.id}-${propertyB.id}`,
+        title: `Comparison: ${propertyA.title} vs ${propertyB.title}`,
+        type: 'other',
+        thumbnailUrl: dataUrl,
+        uploadDate: new Date().toISOString(),
+        size: `${Math.round(dataUrl.length / 1024)} KB`
+      }
+
+      setDocuments((currentDocs) => [...currentDocs, newDocument])
+      
+      soundManager.play('success')
+      toast.success('Comparison saved to Private Vault', {
+        description: 'View it in the Vault tab'
+      })
+    } catch (error) {
+      console.error('Failed to save snapshot:', error)
+      toast.error('Failed to save comparison')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const downloadSnapshot = async () => {
+    const container = containerRef.current
+    if (!container) return
+
+    soundManager.play('glassTap')
+
+    try {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      canvas.width = container.offsetWidth
+      canvas.height = container.offsetHeight
+
+      ctx.fillStyle = '#000000'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      const propertyAImg = new Image()
+      propertyAImg.crossOrigin = 'anonymous'
+      propertyAImg.src = propertyA.imageUrl
+
+      const propertyBImg = new Image()
+      propertyBImg.crossOrigin = 'anonymous'
+      propertyBImg.src = propertyB.imageUrl
+
+      await Promise.all([
+        new Promise((resolve) => {
+          propertyAImg.onload = resolve
+          if (propertyAImg.complete) resolve(null)
+        }),
+        new Promise((resolve) => {
+          propertyBImg.onload = resolve
+          if (propertyBImg.complete) resolve(null)
+        })
+      ])
+
+      const clipWidth = (canvas.width * sliderPosition) / 100
+      ctx.drawImage(propertyAImg, 0, 0, clipWidth, canvas.height, 0, 0, clipWidth, canvas.height)
+      ctx.drawImage(propertyBImg, clipWidth, 0, canvas.width - clipWidth, canvas.height, clipWidth, 0, canvas.width - clipWidth, canvas.height)
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(clipWidth, 0)
+      ctx.lineTo(clipWidth, canvas.height)
+      ctx.stroke()
+
+      const dataUrl = canvas.toDataURL('image/png')
+      const link = document.createElement('a')
+      link.download = `comparison-${propertyA.title.replace(/\s+/g, '-')}-vs-${propertyB.title.replace(/\s+/g, '-')}-${Date.now()}.png`
+      link.href = dataUrl
+      link.click()
+      
+      toast.success('Comparison downloaded')
+    } catch (error) {
+      console.error('Failed to download snapshot:', error)
+      toast.error('Failed to download comparison')
+    }
   }
 
   const getComparison = (valueA: number | undefined, valueB: number | undefined, higherIsBetter = true) => {
@@ -323,6 +461,25 @@ export function PropertyComparisonSlider({ propertyA, propertyB, onClose }: Prop
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={captureSnapshot}
+              disabled={isSaving}
+              className="bg-white/10 backdrop-blur-md text-white hover:bg-white/20"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save to Vault
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={downloadSnapshot}
+              className="bg-white/10 backdrop-blur-md text-white hover:bg-white/20"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download
+            </Button>
             <Button
               variant="secondary"
               size="sm"

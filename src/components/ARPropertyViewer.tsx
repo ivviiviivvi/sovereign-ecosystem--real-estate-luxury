@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Property } from '@/lib/types'
+import { useKV } from '@github/spark/hooks'
+import { Property, Document } from '@/lib/types'
 import { 
   X, Camera, RotateCcw, Maximize2, Minimize2, Info, Eye, EyeOff,
-  Home, DollarSign, Ruler, MapPin, Sparkles, ZoomIn, ZoomOut
+  Home, DollarSign, Ruler, MapPin, Sparkles, ZoomIn, ZoomOut, Save, Download
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
@@ -32,6 +33,14 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showOverlay, setShowOverlay] = useState(true)
   const animationFrameRef = useRef<number | undefined>(undefined)
+  
+  const [documents, setDocuments] = useKV<Document[]>('documents', [])
+  const [isSaving, setIsSaving] = useState(false)
+  
+  const lastTouchDistance = useRef<number>(0)
+  const lastTouchAngle = useRef<number>(0)
+  const gestureStartScale = useRef<number>(1)
+  const gestureStartRotation = useRef<number>(0)
 
   useEffect(() => {
     startCamera()
@@ -271,20 +280,72 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
         x: e.touches[0].clientX - position.x,
         y: e.touches[0].clientY - position.y
       })
+    } else if (e.touches.length === 2) {
+      const touch1 = e.touches[0]
+      const touch2 = e.touches[1]
+      
+      const distance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+      )
+      lastTouchDistance.current = distance
+      
+      const angle = Math.atan2(
+        touch2.clientY - touch1.clientY,
+        touch2.clientX - touch1.clientX
+      ) * (180 / Math.PI)
+      lastTouchAngle.current = angle
+      
+      gestureStartScale.current = scale
+      gestureStartRotation.current = rotation
     }
   }
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (isDragging && e.touches.length === 1) {
+    if (e.touches.length === 1 && isDragging) {
       setPosition({
         x: e.touches[0].clientX - dragStart.x,
         y: e.touches[0].clientY - dragStart.y
       })
+    } else if (e.touches.length === 2) {
+      e.preventDefault()
+      
+      const touch1 = e.touches[0]
+      const touch2 = e.touches[1]
+      
+      const distance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+      )
+      
+      if (lastTouchDistance.current > 0) {
+        const scaleChange = distance / lastTouchDistance.current
+        const newScale = Math.max(0.5, Math.min(3, gestureStartScale.current * scaleChange))
+        setScale(newScale)
+      }
+      
+      const angle = Math.atan2(
+        touch2.clientY - touch1.clientY,
+        touch2.clientX - touch1.clientX
+      ) * (180 / Math.PI)
+      
+      if (lastTouchAngle.current !== 0) {
+        const angleDiff = angle - lastTouchAngle.current
+        const newRotation = (gestureStartRotation.current + angleDiff + 360) % 360
+        setRotation(newRotation)
+      }
     }
   }
 
-  const handleTouchEnd = () => {
-    setIsDragging(false)
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 0) {
+      setIsDragging(false)
+      lastTouchDistance.current = 0
+      lastTouchAngle.current = 0
+    } else if (e.touches.length === 1) {
+      lastTouchDistance.current = 0
+      lastTouchAngle.current = 0
+    }
   }
 
   const resetView = () => {
@@ -297,6 +358,60 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen)
     soundManager.play('glassTap')
+  }
+
+  const captureSnapshot = async () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    setIsSaving(true)
+    soundManager.play('glassTap')
+
+    try {
+      const dataUrl = canvas.toDataURL('image/png')
+      
+      const newDocument: Document = {
+        id: `ar-snapshot-${Date.now()}`,
+        propertyId: property.id,
+        title: `AR Snapshot - ${property.title}`,
+        type: 'other',
+        thumbnailUrl: dataUrl,
+        uploadDate: new Date().toISOString(),
+        size: `${Math.round(dataUrl.length / 1024)} KB`
+      }
+
+      setDocuments((currentDocs) => [...currentDocs, newDocument])
+      
+      soundManager.play('success')
+      toast.success('AR snapshot saved to Private Vault', {
+        description: 'View it in the Vault tab'
+      })
+    } catch (error) {
+      console.error('Failed to save snapshot:', error)
+      toast.error('Failed to save snapshot')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const downloadSnapshot = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    soundManager.play('glassTap')
+
+    try {
+      const dataUrl = canvas.toDataURL('image/png')
+      const link = document.createElement('a')
+      link.download = `ar-view-${property.title.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.png`
+      link.href = dataUrl
+      link.click()
+      
+      toast.success('AR snapshot downloaded')
+    } catch (error) {
+      console.error('Failed to download snapshot:', error)
+      toast.error('Failed to download snapshot')
+    }
   }
 
   return (
@@ -387,7 +502,10 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
                     <div className="flex-1">
                       <h4 className="text-sm font-semibold text-foreground mb-1">AR Property View</h4>
                       <p className="text-xs text-muted-foreground">
-                        Drag to reposition • Use controls to adjust scale and rotation • Point your camera to visualize the property in your space
+                        • Drag with one finger to reposition<br />
+                        • Pinch with two fingers to zoom<br />
+                        • Rotate with two fingers to change angle<br />
+                        • Use controls to save snapshot
                       </p>
                     </div>
                   </div>
@@ -406,6 +524,23 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
                 className="bg-card/90 backdrop-blur-xl"
               >
                 {showInfo ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={captureSnapshot}
+                disabled={isSaving}
+                className="bg-card/90 backdrop-blur-xl"
+              >
+                <Save className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={downloadSnapshot}
+                className="bg-card/90 backdrop-blur-xl"
+              >
+                <Download className="w-5 h-5" />
               </Button>
               <Button
                 variant="secondary"
