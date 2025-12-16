@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Mail, MessageSquare, Send, CheckCircle, XCircle, Clock, Trash2, MessageCircle, Send as SendIcon, Globe } from 'lucide-react'
+import { Mail, MessageSquare, Send, CheckCircle, XCircle, Clock, Trash2, MessageCircle, Send as SendIcon, Globe, Info } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -13,6 +13,7 @@ import { ScrollArea } from './ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { notificationDeliveryService, NotificationPreferences, DeliveryLog, AlertPriority } from '@/lib/notification-delivery'
 import { SupportedLanguage, getSupportedLanguages, getLanguageName } from '@/lib/translations'
+import { getLanguageDisplayInfo } from '@/lib/language-detection'
 import { toast } from 'sonner'
 
 interface NotificationDeliverySettingsProps {
@@ -35,6 +36,14 @@ export function NotificationDeliverySettings({ open, onOpenChange }: Notificatio
   const [phoneError, setPhoneError] = useState('')
   const [whatsappError, setWhatsappError] = useState('')
   const [telegramError, setTelegramError] = useState('')
+  const [detectionInfo, setDetectionInfo] = useState<string | null>(null)
+
+  useEffect(() => {
+    const result = notificationDeliveryService.getLanguageDetectionResult()
+    if (result && result.detected !== 'en') {
+      setDetectionInfo(`Detected: ${getLanguageName(result.detected)} (${getLanguageDisplayInfo(result)})`)
+    }
+  }, [])
 
   useEffect(() => {
     const unsubPrefs = notificationDeliveryService.subscribePreferences(setPreferences)
@@ -570,6 +579,14 @@ export function NotificationDeliverySettings({ open, onOpenChange }: Notificatio
                     ))}
                   </SelectContent>
                 </Select>
+                {detectionInfo && (
+                  <div className="flex items-center gap-1 mt-2">
+                    <Info className="w-3 h-3 text-champagne-gold" />
+                    <p className="text-xs text-slate-grey">
+                      {detectionInfo}
+                    </p>
+                  </div>
+                )}
                 <p className="text-xs text-slate-grey mt-1">
                   Alert messages will be translated to this language
                 </p>
@@ -672,6 +689,14 @@ export function NotificationDeliverySettings({ open, onOpenChange }: Notificatio
                     ))}
                   </SelectContent>
                 </Select>
+                {detectionInfo && (
+                  <div className="flex items-center gap-1 mt-2">
+                    <Info className="w-3 h-3 text-champagne-gold" />
+                    <p className="text-xs text-slate-grey">
+                      {detectionInfo}
+                    </p>
+                  </div>
+                )}
                 <p className="text-xs text-slate-grey mt-1">
                   Alert messages will be translated to this language
                 </p>
@@ -832,6 +857,12 @@ export function NotificationDeliverySettings({ open, onOpenChange }: Notificatio
                 <span className="text-champagne-gold">•</span>
                 <span>
                   Multi-language support available for WhatsApp and Telegram: English, Spanish, French, German, Italian, Portuguese, Chinese, Japanese, Arabic, and Russian
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-champagne-gold">•</span>
+                <span>
+                  Language is automatically detected from your browser settings or system timezone for your convenience
                 </span>
               </li>
               <li className="flex gap-2">

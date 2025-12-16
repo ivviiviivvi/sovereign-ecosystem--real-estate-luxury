@@ -13,6 +13,7 @@ import { PrivateVault } from './components/PrivateVault'
 import { MarketOverview } from './components/MarketOverview'
 import { PatternAlertNotifications } from './components/PatternAlertNotifications'
 import { LiveAlertToast } from './components/LiveAlertToast'
+import { LanguageDetectionBanner } from './components/LanguageDetectionBanner'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
 import { Volume2, VolumeX } from 'lucide-react'
 import { soundManager } from './lib/sound-manager'
@@ -65,6 +66,7 @@ function App() {
       <>
         <RoleSelector onSelectRole={handleRoleSelect} />
         <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
+        <LanguageDetectionBanner />
         <Toaster theme="dark" position="top-center" />
       </>
     )
@@ -75,6 +77,7 @@ function App() {
       <>
         <ClientAuth onAuthenticate={handleClientAuth} />
         <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
+        <LanguageDetectionBanner />
         <Toaster theme="dark" position="top-center" />
       </>
     )
@@ -90,6 +93,7 @@ function App() {
           onBack={handleBack}
         />
         <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
+        <LanguageDetectionBanner />
         <LiveAlertToast />
         <Toaster theme="dark" position="top-center" />
       </>
@@ -135,6 +139,7 @@ function App() {
         <AIConcierge properties={analyzedProperties} userPortfolio={analyzedProperties} />
       </div>
       <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
+      <LanguageDetectionBanner />
       <LiveAlertToast />
       <Toaster theme="dark" position="top-center" />
     </>

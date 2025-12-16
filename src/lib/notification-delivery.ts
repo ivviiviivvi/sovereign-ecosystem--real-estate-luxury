@@ -1,5 +1,6 @@
 import { PatternAlert, AlertPriority } from './pattern-alerts'
 import { SupportedLanguage, getTranslations } from './translations'
+import { detectLanguage, LanguageDetectionResult } from './language-detection'
 
 export type { AlertPriority }
 
@@ -69,6 +70,8 @@ class NotificationDeliveryService {
   private deliveryLogs: DeliveryLog[] = []
   private deliverySubscribers: Set<(logs: DeliveryLog[]) => void> = new Set()
   private preferencesSubscribers: Set<(prefs: NotificationPreferences) => void> = new Set()
+  private languageDetected = false
+  private detectionResult: LanguageDetectionResult | null = null
 
   async deliverAlert(alert: PatternAlert): Promise<DeliveryLog[]> {
     const logs: DeliveryLog[] = []
@@ -443,6 +446,36 @@ ${alert.metrics?.volume ? `• ${t.volume}: <code>${alert.metrics.volume}</code>
     const cleanUsername = username.replace(/^@/, '')
     const usernameRegex = /^[a-zA-Z0-9_]{5,32}$/
     return usernameRegex.test(cleanUsername)
+  }
+
+  async autoDetectLanguage(useGeolocation = false): Promise<LanguageDetectionResult> {
+    if (this.languageDetected && this.detectionResult) {
+      return this.detectionResult
+    }
+
+    const result = await detectLanguage({ useGeolocation })
+    this.detectionResult = result
+    this.languageDetected = true
+
+    if (this.preferences.whatsapp.language === 'en' && result.confidence >= 0.7) {
+      this.preferences.whatsapp.language = result.detected
+    }
+
+    if (this.preferences.telegram.language === 'en' && result.confidence >= 0.7) {
+      this.preferences.telegram.language = result.detected
+    }
+
+    this.notifyPreferencesSubscribers()
+
+    return result
+  }
+
+  getLanguageDetectionResult(): LanguageDetectionResult | null {
+    return this.detectionResult
+  }
+
+  hasDetectedLanguage(): boolean {
+    return this.languageDetected
   }
 }
 
