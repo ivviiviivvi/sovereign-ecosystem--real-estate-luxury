@@ -1,4 +1,5 @@
 import { soundManager } from './sound-manager'
+import { notificationDeliveryService } from './notification-delivery'
 
 export type PatternType = 
   | 'surge' 
@@ -162,6 +163,10 @@ class PatternAlertService {
     }
 
     this.notifyAlertSubscribers()
+
+    notificationDeliveryService.deliverAlert(alert).catch(err => {
+      console.error('Failed to deliver external notification:', err)
+    })
 
     return alert
   }

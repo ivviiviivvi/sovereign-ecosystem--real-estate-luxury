@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Settings, Bell, Volume2, VolumeX, RotateCcw } from 'lucide-react'
+import { Settings, Bell, Volume2, VolumeX, RotateCcw, Send } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -19,10 +19,12 @@ import { Separator } from './ui/separator'
 import { useAlertRules } from '@/hooks/use-pattern-alerts'
 import { patternAlertService, AlertRule, AlertPriority } from '@/lib/pattern-alerts'
 import { toast } from 'sonner'
+import { NotificationDeliverySettings } from './NotificationDeliverySettings'
 
 export function PatternAlertSettings() {
   const rules = useAlertRules()
   const [open, setOpen] = useState(false)
+  const [deliverySettingsOpen, setDeliverySettingsOpen] = useState(false)
 
   const handleToggleRule = (ruleId: string, enabled: boolean) => {
     patternAlertService.updateAlertRule(ruleId, { enabled })
@@ -56,7 +58,8 @@ export function PatternAlertSettings() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="gap-2">
           <Settings className="w-4 h-4" />
@@ -197,6 +200,20 @@ export function PatternAlertSettings() {
 
           <Separator />
 
+          <Button
+            variant="outline"
+            className="w-full gap-2"
+            onClick={() => {
+              setDeliverySettingsOpen(true)
+              setOpen(false)
+            }}
+          >
+            <Send className="w-4 h-4" />
+            Configure Email/SMS Delivery
+          </Button>
+
+          <Separator />
+
           <div className="bg-onyx-deep p-4 rounded-lg border border-border">
             <h4 className="text-sm font-semibold text-foreground mb-2">
               How Pattern Alerts Work
@@ -231,5 +248,16 @@ export function PatternAlertSettings() {
         </div>
       </DialogContent>
     </Dialog>
+    
+    <NotificationDeliverySettings
+      open={deliverySettingsOpen}
+      onOpenChange={(open) => {
+        setDeliverySettingsOpen(open)
+        if (!open) {
+          setOpen(true)
+        }
+      }}
+    />
+    </>
   )
 }

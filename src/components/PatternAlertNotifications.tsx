@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, X, Check, Trash2, Settings, Filter } from 'lucide-react'
+import { Bell, X, Check, Trash2, Settings, Filter, Mail, MessageSquare } from 'lucide-react'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { Card } from './ui/card'
 import { ScrollArea } from './ui/scroll-area'
 import { Separator } from './ui/separator'
-import { usePatternAlerts } from '@/hooks/use-pattern-alerts'
+import { usePatternAlerts, useNotificationPreferences } from '@/hooks/use-pattern-alerts'
 import { patternAlertService, AlertPriority } from '@/lib/pattern-alerts'
 
 interface PatternAlertNotificationsProps {
@@ -15,10 +15,12 @@ interface PatternAlertNotificationsProps {
 
 export function PatternAlertNotifications({ onOpenSettings }: PatternAlertNotificationsProps) {
   const alerts = usePatternAlerts()
+  const preferences = useNotificationPreferences()
   const [isOpen, setIsOpen] = useState(false)
   const [filterPriority, setFilterPriority] = useState<AlertPriority | 'all'>('all')
 
   const unreadCount = alerts.filter(a => !a.isRead).length
+  const hasExternalDelivery = preferences.email.enabled || preferences.sms.enabled
 
   const filteredAlerts = filterPriority === 'all' 
     ? alerts 
@@ -115,9 +117,25 @@ export function PatternAlertNotifications({ onOpenSettings }: PatternAlertNotifi
                       <h3 className="text-lg font-bold text-champagne-gold">
                         Pattern Alerts
                       </h3>
-                      <p className="text-xs text-slate-grey">
-                        {unreadCount} unread
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-slate-grey">
+                          {unreadCount} unread
+                        </p>
+                        {hasExternalDelivery && (
+                          <>
+                            <span className="text-slate-grey">•</span>
+                            <div className="flex items-center gap-1">
+                              {preferences.email.enabled && (
+                                <Mail className="w-3 h-3 text-green-400" />
+                              )}
+                              {preferences.sms.enabled && (
+                                <MessageSquare className="w-3 h-3 text-green-400" />
+                              )}
+                              <span className="text-xs text-green-400">Active</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       {onOpenSettings && (
