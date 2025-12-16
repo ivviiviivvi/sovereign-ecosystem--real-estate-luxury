@@ -4,6 +4,7 @@ import { Card } from './ui/card'
 import { Badge } from './ui/badge'
 import { AlertTriangle, Calendar, Shield, TrendingUp } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { AnimatedPropertyCard } from './AnimatedPropertyCard'
 import { MarketTicker } from './MarketTicker'
 import { MarketActivityIndicator } from './MarketActivityIndicator'
 import { LivePriceDisplay } from './LivePriceDisplay'
@@ -35,8 +36,8 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pearl-white via-background to-lavender-mist/20 text-foreground">
-      <header className="border-b border-border/30 bg-card/60 backdrop-blur-xl sticky top-0 z-40 shadow-sm">
+    <div className="min-h-screen bg-gradient-to-br from-pearl-white via-background to-lavender-mist/20 dark:from-midnight-blue dark:via-background dark:to-moonlit-indigo/30 text-foreground transition-colors duration-700">
+      <header className="border-b border-border/30 bg-card/60 backdrop-blur-xl sticky top-0 z-40 shadow-sm transition-colors duration-500">
         <div className="container mx-auto px-6 py-5 flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-light text-foreground tracking-wide">Portfolio Shield</h1>
@@ -46,7 +47,7 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
             <PatternAlertNotifications />
             <button
               onClick={onBack}
-              className="text-muted-foreground hover:text-rose-blush transition-colors font-light"
+              className="text-muted-foreground hover:text-primary dark:hover:text-moonlit-lavender transition-colors font-light duration-300"
             >
               Switch View
             </button>
@@ -91,8 +92,8 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
               Lease Watchlist
             </h2>
             {watchlistProperties.length === 0 ? (
-              <Card className="bg-onyx-surface border-border p-8 text-center">
-                <p className="text-slate-grey">No properties with leases expiring in the next 90 days</p>
+              <Card className="bg-card/90 dark:bg-card/70 backdrop-blur-sm border-border p-8 text-center">
+                <p className="text-muted-foreground">No properties with leases expiring in the next 90 days</p>
               </Card>
             ) : (
               <div className="grid gap-4">
@@ -109,8 +110,8 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
               Risk Map
             </h2>
             {riskProperties.length === 0 ? (
-              <Card className="bg-onyx-surface border-border p-8 text-center">
-                <p className="text-slate-grey">No active compliance flags</p>
+              <Card className="bg-card/90 dark:bg-card/70 backdrop-blur-sm border-border p-8 text-center">
+                <p className="text-muted-foreground">No active compliance flags</p>
               </Card>
             ) : (
               <div className="grid gap-4">
@@ -146,13 +147,14 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      whileHover={{ y: -4, scale: 1.02 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
     >
-      <Card className="bg-onyx-surface border-border p-6">
+      <Card className="bg-card/90 dark:bg-card/70 backdrop-blur-sm border-border p-6 hover:shadow-lg hover:shadow-primary/10 dark:hover:shadow-moonlit-lavender/20 transition-all duration-300">
         <div className="flex items-center gap-4">
           <div className={`${color}`}>{icon}</div>
           <div>
-            <p className="text-slate-grey text-sm uppercase tracking-wide">{label}</p>
+            <p className="text-muted-foreground text-sm uppercase tracking-wide">{label}</p>
             <p className={`text-3xl font-bold ${color}`}>{value}</p>
           </div>
         </div>
@@ -172,24 +174,22 @@ function PropertyCard({ property, index, showMap, selectedIds, onToggle }: {
   const disabled = !isSelected && (selectedIds?.length || 0) >= 4
 
   const cardContent = (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.4 }}
-    >
-      <Card className="bg-onyx-surface border-border p-6 hover:border-champagne-gold/50 transition-colors">
-        <div className="flex gap-6">
-          <img
+    <AnimatedPropertyCard index={index}>
+      <Card className="bg-card/90 dark:bg-card/70 backdrop-blur-sm border-border hover:border-primary/50 dark:hover:border-moonlit-lavender/50 transition-all duration-500 shadow-lg hover:shadow-primary/10 dark:hover:shadow-moonlit-lavender/20">
+        <div className="flex gap-6 p-6">
+          <motion.img
             src={property.imageUrl}
             alt={property.title}
             className="w-32 h-32 object-cover rounded-lg"
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           />
           
           <div className="flex-1">
             <div className="flex items-start justify-between mb-3">
               <div>
                 <h3 className="text-xl font-bold text-foreground mb-1">{property.title}</h3>
-                <p className="text-slate-grey text-sm">
+                <p className="text-muted-foreground text-sm">
                   {property.address}, {property.city}, {property.state} {property.zip}
                 </p>
               </div>
@@ -206,18 +206,24 @@ function PropertyCard({ property, index, showMap, selectedIds, onToggle }: {
             </div>
 
             <div className="flex flex-wrap gap-2 mb-3">
-              <span className="text-slate-grey text-sm">
+              <span className="text-muted-foreground text-sm">
                 {property.bedrooms} bed • {property.bathrooms} bath • {property.sqft.toLocaleString()} sqft
               </span>
               {property.yearBuilt && (
-                <span className="text-slate-grey text-sm">• Built {property.yearBuilt}</span>
+                <span className="text-muted-foreground text-sm">• Built {property.yearBuilt}</span>
               )}
             </div>
 
             {property.complianceFlags.length > 0 && (
               <div className="space-y-2">
                 {property.complianceFlags.map((flag, i) => (
-                  <div key={i} className="flex items-start gap-2">
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="flex items-start gap-2"
+                  >
                     <Badge
                       variant={flag.severity === 'URGENT' ? 'destructive' : 'secondary'}
                       className="shrink-0"
@@ -225,15 +231,15 @@ function PropertyCard({ property, index, showMap, selectedIds, onToggle }: {
                       {flag.severity}
                     </Badge>
                     <p className="text-sm text-foreground">{flag.message}</p>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             )}
 
             {showMap && (
               <div className="mt-4 pt-4 border-t border-border">
-                <div className="bg-onyx-deep rounded-lg p-4 flex items-center justify-center">
-                  <p className="text-slate-grey text-sm">
+                <div className="bg-muted/50 dark:bg-moonlit-indigo/20 rounded-lg p-4 flex items-center justify-center backdrop-blur-sm">
+                  <p className="text-muted-foreground text-sm">
                     📍 {property.city}, {property.state}
                   </p>
                 </div>
@@ -242,7 +248,7 @@ function PropertyCard({ property, index, showMap, selectedIds, onToggle }: {
           </div>
         </div>
       </Card>
-    </motion.div>
+    </AnimatedPropertyCard>
   )
 
   if (onToggle) {

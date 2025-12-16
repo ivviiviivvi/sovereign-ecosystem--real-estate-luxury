@@ -110,6 +110,43 @@
   --rose-gold: oklch(0.75 0.12 50);
 }
 
+.dark {
+  --background: oklch(0.15 0.03 270);
+  --foreground: oklch(0.92 0.02 280);
+  
+  --card: oklch(0.20 0.04 275);
+  --card-foreground: oklch(0.92 0.02 280);
+  
+  --popover: oklch(0.18 0.04 275);
+  --popover-foreground: oklch(0.92 0.02 280);
+  
+  --primary: oklch(0.75 0.12 280);
+  --primary-foreground: oklch(0.15 0.03 270);
+  
+  --secondary: oklch(0.25 0.04 275);
+  --secondary-foreground: oklch(0.85 0.05 280);
+  
+  --muted: oklch(0.23 0.04 275);
+  --muted-foreground: oklch(0.60 0.05 280);
+  
+  --accent: oklch(0.68 0.15 290);
+  --accent-foreground: oklch(0.95 0.02 280);
+  
+  --destructive: oklch(0.65 0.20 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  
+  --border: oklch(0.30 0.04 275);
+  --input: oklch(0.28 0.04 275);
+  --ring: oklch(0.75 0.12 280);
+  
+  --moonlit-indigo: oklch(0.35 0.12 280);
+  --moonlit-violet: oklch(0.55 0.18 290);
+  --moonlit-lavender: oklch(0.70 0.15 285);
+  --moonlit-silver: oklch(0.80 0.05 280);
+  --moonlit-mist: oklch(0.45 0.08 275);
+  --midnight-blue: oklch(0.25 0.08 270);
+}
+
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -137,6 +174,13 @@
   --color-lavender-mist: var(--lavender-mist);
   --color-mauve-deep: var(--mauve-deep);
   --color-rose-gold: var(--rose-gold);
+  
+  --color-moonlit-indigo: var(--moonlit-indigo);
+  --color-moonlit-violet: var(--moonlit-violet);
+  --color-moonlit-lavender: var(--moonlit-lavender);
+  --color-moonlit-silver: var(--moonlit-silver);
+  --color-moonlit-mist: var(--moonlit-mist);
+  --color-midnight-blue: var(--midnight-blue);
   
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: var(--radius);

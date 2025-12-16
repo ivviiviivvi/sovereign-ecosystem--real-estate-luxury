@@ -19,6 +19,13 @@ This platform requires dual user flows (agent/client), sophisticated compliance 
 - Progression: Properties load → Market data service initializes → Price updates begin streaming → Snapshots recorded automatically → Live price displays animate changes → Sparkline charts update → Market tickers scroll across dashboard → Trend indicators show up/down/stable movements → Users can access floating control panel to adjust volatility (0.1%-10%), update speed (0.3s-30s), and pause/resume market simulation → Users open Historical Replay panel → D3.js chart displays all market tickers over time as color-coded lines → Click any point on timeline to jump to that moment → Use playback controls (play/pause/skip) to replay historical data → Adjust playback speed → Select different time ranges to analyze → Pattern Analyzer identifies volatility patterns in real-time with confidence scores and descriptions → Pattern history shows all detected patterns with timestamps → Pattern alerts appear in notification center with unread badge → **Users click bell icon → Open Alert Settings → Configure Multi-Channel Delivery → Enter contact details (email, phone for SMS/WhatsApp, Telegram username) → Select language for WhatsApp/Telegram messages from dropdown (10 languages available, with auto-detected language shown as suggestion) → Select which priority levels to deliver externally (critical, high, medium, low) → Save and enable delivery channels → When critical patterns detected, alerts sent via configured channels in selected language → Delivery logs track sent/failed notifications → Users receive formatted emails with full alert details and metrics → Users receive concise SMS messages → Users receive WhatsApp messages with rich formatting and emojis in selected language → Users receive Telegram messages with HTML formatting in selected language → Language detection banner appears on first load for non-English users → User clicks "Yes, use [Language]" to accept or "Keep English" to dismiss → Selection persists via localStorage → Detected language shown in notification settings with detection source (Browser Settings/System Timezone/Location)**
 - Success criteria: Prices update smoothly without jank, animations feel premium and intentional, trend indicators accurately reflect price movements, market sentiment calculations are correct, no performance degradation with multiple properties, volatility controls respond instantly, update frequency changes apply without interruption. Historical replay: Chart renders smoothly with up to 1000+ data points, playback controls respond instantly, timeline scrubbing is smooth, snapshots are retained for selected time range, pattern detection identifies changes within 5-10 seconds with >70% confidence, pattern history updates in real-time without duplicates. **Multi-channel delivery: All contact fields validate correctly before enabling, notifications send within 2-3 seconds of alert trigger, delivery logs accurately track status, email formatting includes all alert details, SMS messages stay under 160 characters, WhatsApp/Telegram messages display correctly translated text in selected language, timestamps use locale-appropriate formatting, contact information persists securely, delivery status indicators show active channels and languages in notification center. Language detection: Detects language accurately from browser settings (95% confidence), timezone (70% confidence), or geolocation (80% confidence), banner appears only for non-English detections with 70%+ confidence, user choice persists across sessions, detection source displayed in notification settings, no performance impact from detection API calls, graceful fallback to English if detection fails.**
 
+**Dark Mode with Moonlit Theme**
+- Functionality: Persistent theme toggle allowing users to switch between light mode (rose-tinted, pearl luminosity) and dark mode (deep indigo, moonlit lavender accents) with smooth 700ms color transitions across all UI elements. Toggle button in top-left with animated sun/moon icon rotation. Theme preference persists using KV storage. All components support both themes with appropriate color adaptations including cards, buttons, text, borders, shadows, and gradients.
+- Purpose: Provides viewing comfort in different lighting conditions while maintaining the luxurious aesthetic. Dark mode creates an intimate, nocturnal atmosphere perfect for evening portfolio reviews, while light mode offers clarity for daytime analysis.
+- Trigger: Theme toggle button (top-left corner) with sun/moon icon. Defaults to light mode on first visit, then remembers user preference.
+- Progression: User clicks theme toggle → Icon rotates 360° → Background colors transition over 700ms → All UI elements smoothly fade to new palette → Particle effects adapt hue and blend mode → Cards update with new backgrounds/borders → Text colors adjust for optimal contrast → Theme preference saved to KV storage → On reload, theme applies immediately without flash
+- Success criteria: Toggle responds instantly with smooth animation, all colors transition without jarring flashes, particle effects adapt appropriately, no performance degradation during transition, theme preference persists across sessions, WCAG AA contrast ratios maintained in both modes, dark mode feels cohesive and luxurious (not just inverted colors), sound effect plays on toggle
+
 **Agent Dashboard (Portfolio Shield)**
 - Functionality: Blind database architecture that separates client PII (local) from asset data (cloud) with automated compliance checking
 - Purpose: Enables agents to monitor portfolio risk and regulatory compliance without exposing sensitive client information
@@ -93,15 +100,20 @@ This platform requires dual user flows (agent/client), sophisticated compliance 
 - **Language Detection for English Users**: Banner never appears for users with English browser settings, auto-detection is silent
 - **Changing Language After Detection**: Users can manually change language in notification settings at any time, detection info shown as reference only
 - **Geolocation Permission Denied**: Detection falls back to browser/timezone methods, no permission prompt shown by default (opt-in only)
+- **Theme Toggle During Animations**: Theme change interrupts and completes current animations gracefully, no animation conflicts
+- **Theme Preference on First Load**: Applies saved theme immediately on mount, no flash of wrong theme during hydration
+- **Dark Mode Particle Rendering**: Particles adapt color hue and blend mode appropriately, maintain performance in both themes
+- **Tab Switching During Theme Change**: Theme transition continues smoothly even when switching tabs, completes when tab regains focus
 
 ## Design Direction
 
-The design should evoke the feeling of accessing a private, luxurious sanctuary with a sophisticated feminine aesthetic. Every interaction should feel refined and elegant, with soft tactile feedback that makes digital interactions feel gentle yet intentional. The aesthetic balances modern minimalism (soft surfaces, generous whitespace, flowing curves) with luxurious accents (rose gold, gradient overlays, subtle animations). Motion should be purposeful and graceful, never harsh or mechanical - like silk fabric flowing or rose petals falling.
+The design should evoke the feeling of accessing a private, luxurious sanctuary with a sophisticated feminine aesthetic that transforms seamlessly between day and night modes. Every interaction should feel refined and elegant, with soft tactile feedback that makes digital interactions feel gentle yet intentional. The aesthetic balances modern minimalism (soft surfaces, generous whitespace, flowing curves) with luxurious accents (rose gold/moonlit silver, gradient overlays, subtle animations, floating particles). Motion should be purposeful and graceful, never harsh or mechanical - like silk fabric flowing or rose petals falling. The dark mode embraces a moonlit elegance with deep indigo backgrounds, soft lavender accents, and shimmering particle effects that create an ethereal, nocturnal luxury experience.
 
 ## Color Selection
 
-The palette creates a soft, ethereal luxury aesthetic with rose-tinted warmth and pearl-like luminosity, establishing a sophisticated feminine nocturnal/daytime hybrid mood.
+The palette creates a soft, ethereal luxury aesthetic with rose-tinted warmth and pearl-like luminosity for light mode, transitioning to a deep moonlit elegance in dark mode with indigo depths and lavender shimmer.
 
+**Light Mode:**
 - **Primary Color**: Rose Blush `oklch(0.65 0.15 340)` - Communicates elegance, sophistication, and feminine luxury; used for CTAs, active states, and key interactive elements
 - **Secondary Colors**: 
   - Pearl White `oklch(0.97 0.01 320)` - Primary background establishing soft, luminous atmosphere
@@ -109,10 +121,22 @@ The palette creates a soft, ethereal luxury aesthetic with rose-tinted warmth an
   - Lavender Mist `oklch(0.85 0.10 300)` - Ethereal accent for gradients and overlays
   - Mauve Deep `oklch(0.50 0.08 320)` - Text and subtle contrast elements
 - **Accent Color**: Rose Gold `oklch(0.75 0.12 50)` - Used for gradient blends, progress indicators, and premium feature highlights
+
+**Dark Mode (Moonlit Palette):**
+- **Primary Color**: Moonlit Lavender `oklch(0.70 0.15 285)` - Soft, glowing lavender that feels luxurious and nocturnal
+- **Secondary Colors**:
+  - Midnight Blue `oklch(0.15 0.03 270)` - Deep background creating intimate nighttime atmosphere
+  - Moonlit Indigo `oklch(0.35 0.12 280)` - Rich mid-tone for elevated surfaces
+  - Moonlit Violet `oklch(0.55 0.18 290)` - Vibrant accent for interactive elements
+  - Moonlit Silver `oklch(0.80 0.05 280)` - Shimmering text and icon color
+- **Accent Color**: Moonlit Mist `oklch(0.45 0.08 275)` - Subtle atmospheric accent for depth
+
 - **Foreground/Background Pairings**: 
-  - Pearl White (oklch(0.97 0.01 320)): Mauve Deep text (oklch(0.50 0.08 320)) - Ratio 6.5:1 ✓
-  - Card Background (oklch(0.99 0.005 320)): Foreground text (oklch(0.25 0.02 320)) - Ratio 12.1:1 ✓
-  - Rose Blush (oklch(0.65 0.15 340)): White text (oklch(0.99 0 0)) - Ratio 5.2:1 ✓
+  - Light: Pearl White (oklch(0.97 0.01 320)): Mauve Deep text (oklch(0.50 0.08 320)) - Ratio 6.5:1 ✓
+  - Light: Card Background (oklch(0.99 0.005 320)): Foreground text (oklch(0.25 0.02 320)) - Ratio 12.1:1 ✓
+  - Light: Rose Blush (oklch(0.65 0.15 340)): White text (oklch(0.99 0 0)) - Ratio 5.2:1 ✓
+  - Dark: Midnight Blue (oklch(0.15 0.03 270)): Moonlit Silver text (oklch(0.80 0.05 280)) - Ratio 8.1:1 ✓
+  - Dark: Moonlit Indigo (oklch(0.35 0.12 280)): Moonlit Silver text (oklch(0.80 0.05 280)) - Ratio 4.7:1 ✓
 
 ## Font Selection
 
@@ -129,7 +153,7 @@ Typography should establish a refined, editorial elegance with flowing serifs fo
 
 ## Animations
 
-Animations should feel graceful and fluid, with easing curves that mimic flowing fabrics, floating petals, and gentle breezes. Key moments include: the vault unlocking sequence (2s orchestrated animation with sound), the wax seal stamp (0.8s with gentle settle), pinch-to-summarize (0.3s spring animation), pull-to-search (silk ribbon effect), and the circular yield slider (real-time with gradient shimmer). All transitions use elegant cubic-bezier curves (e.g., [0.16, 1, 0.3, 1]) to create smooth, organic motion. Micro-interactions like button presses have 100ms feedback with subtle scale transforms, while major state changes take 400-600ms with graceful fade and slide combinations. Hover states include gentle lifts and soft glow effects.
+Animations should feel graceful and fluid, with easing curves that mimic flowing fabrics, floating petals, and gentle breezes. **Atmospheric particle effects** float across backgrounds in both light and dark modes, creating depth and luxury through connected particle networks with subtle glow effects. **Property cards** feature staggered entrance animations (0.5s delay per card, scale from 0.95), smooth hover lifts (-8px translate with 1.02 scale), and exit animations for seamless transitions. **Theme transitions** between light and dark modes are smooth 700ms color transitions with rotating icon animations. Key moments include: the vault unlocking sequence (2s orchestrated animation with sound), the wax seal stamp (0.8s with gentle settle), pinch-to-summarize (0.3s spring animation), pull-to-search (silk ribbon effect), and the circular yield slider (real-time with gradient shimmer). All transitions use elegant cubic-bezier curves (e.g., [0.16, 1, 0.3, 1]) to create smooth, organic motion. Micro-interactions like button presses have 100ms feedback with subtle scale transforms, while major state changes take 400-600ms with graceful fade and slide combinations. Hover states include gentle lifts and soft glow effects. **Floating background elements** use independent animation loops (15-25s duration) with vertical float, horizontal drift, and opacity pulsing to create a living, breathing atmosphere.
 
 ## Component Selection
 
@@ -152,6 +176,10 @@ Animations should feel graceful and fluid, with easing curves that mimic flowing
   - Sound manager service for coordinating Howler.js effects
   - Masonry grid layout for vault documents
   - Custom map placeholder component for risk visualization
+  - **Canvas-based particle background with connected network effects**
+  - **Framer Motion floating elements with independent animation loops**
+  - **Animated property card wrapper with staggered entrance/exit**
+  - **Theme toggle with rotating icon animations**
 - **States**: 
   - Buttons: Default (soft glow), Hover (rose blush border + lift), Active (scale down 0.98 + sound), Disabled (50% opacity)
   - Inputs: Default (soft border), Focus (rose blush ring + glow), Error (red border + gentle shake), Success (green checkmark)
@@ -184,6 +212,8 @@ Animations should feel graceful and fluid, with easing curves that mimic flowing
   - Check (selection confirmation) - strokeWidth: 1.5
   - Award (best value indicator) - strokeWidth: 1.5
   - Lightbulb (considerations) - strokeWidth: 1.5
+  - Moon (dark mode) - strokeWidth: 1.5, fill variant
+  - Sun (light mode) - strokeWidth: 1.5, fill variant
 - **Spacing**: 
   - Container padding: px-6 (mobile), px-12 (desktop)
   - Card gaps: gap-4 (tight grids), gap-8 (property cards)

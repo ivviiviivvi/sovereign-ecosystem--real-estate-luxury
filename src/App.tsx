@@ -14,9 +14,13 @@ import { MarketOverview } from './components/MarketOverview'
 import { PatternAlertNotifications } from './components/PatternAlertNotifications'
 import { LiveAlertToast } from './components/LiveAlertToast'
 import { LanguageDetectionBanner } from './components/LanguageDetectionBanner'
+import { ThemeToggle } from './components/ThemeToggle'
+import { ParticleBackground } from './components/ParticleBackground'
+import { FloatingElements } from './components/FloatingElements'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
 import { Volume2, VolumeX } from 'lucide-react'
 import { soundManager } from './lib/sound-manager'
+import { motion, AnimatePresence } from 'framer-motion'
 
 function App() {
   const [properties] = useKV<Property[]>('properties', [])
@@ -64,7 +68,16 @@ function App() {
   if (!userRole) {
     return (
       <>
-        <RoleSelector onSelectRole={handleRoleSelect} />
+        <ParticleBackground />
+        <FloatingElements />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <RoleSelector onSelectRole={handleRoleSelect} />
+        </motion.div>
+        <ThemeToggle />
         <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
         <LanguageDetectionBanner />
         <Toaster theme="light" position="top-center" />
@@ -75,7 +88,16 @@ function App() {
   if (userRole === 'client' && !isAuthenticated) {
     return (
       <>
-        <ClientAuth onAuthenticate={handleClientAuth} />
+        <ParticleBackground />
+        <FloatingElements />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <ClientAuth onAuthenticate={handleClientAuth} />
+        </motion.div>
+        <ThemeToggle />
         <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
         <LanguageDetectionBanner />
         <Toaster theme="light" position="top-center" />
@@ -86,12 +108,21 @@ function App() {
   if (userRole === 'agent') {
     return (
       <>
-        <AgentDashboard
-          properties={analyzedProperties}
-          watchlistProperties={watchlistProperties}
-          riskProperties={riskProperties}
-          onBack={handleBack}
-        />
+        <ParticleBackground />
+        <FloatingElements />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <AgentDashboard
+            properties={analyzedProperties}
+            watchlistProperties={watchlistProperties}
+            riskProperties={riskProperties}
+            onBack={handleBack}
+          />
+        </motion.div>
+        <ThemeToggle />
         <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
         <LanguageDetectionBanner />
         <LiveAlertToast />
@@ -102,16 +133,23 @@ function App() {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-pearl-white via-background to-lavender-mist/20">
+      <ParticleBackground />
+      <FloatingElements />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="min-h-screen bg-gradient-to-br from-pearl-white via-background to-lavender-mist/20 dark:from-midnight-blue dark:via-background dark:to-moonlit-indigo/30 transition-colors duration-700"
+      >
         <Tabs defaultValue="feed" className="w-full">
-          <TabsList className="w-full justify-center bg-card/80 backdrop-blur-xl border-b border-border/50 rounded-none sticky top-0 z-40 shadow-sm">
-            <TabsTrigger value="feed" className="data-[state=active]:text-rose-blush data-[state=active]:bg-rose-blush/10 rounded-full transition-all duration-300">
+          <TabsList className="w-full justify-center bg-card/80 backdrop-blur-xl border-b border-border/50 rounded-none sticky top-0 z-40 shadow-sm transition-colors duration-500">
+            <TabsTrigger value="feed" className="data-[state=active]:text-rose-blush dark:data-[state=active]:text-moonlit-lavender data-[state=active]:bg-rose-blush/10 dark:data-[state=active]:bg-moonlit-lavender/10 rounded-full transition-all duration-300">
               Feed
             </TabsTrigger>
-            <TabsTrigger value="market" className="data-[state=active]:text-rose-blush data-[state=active]:bg-rose-blush/10 rounded-full transition-all duration-300">
+            <TabsTrigger value="market" className="data-[state=active]:text-rose-blush dark:data-[state=active]:text-moonlit-lavender data-[state=active]:bg-rose-blush/10 dark:data-[state=active]:bg-moonlit-lavender/10 rounded-full transition-all duration-300">
               Market
             </TabsTrigger>
-            <TabsTrigger value="vault" className="data-[state=active]:text-rose-blush data-[state=active]:bg-rose-blush/10 rounded-full transition-all duration-300">
+            <TabsTrigger value="vault" className="data-[state=active]:text-rose-blush dark:data-[state=active]:text-moonlit-lavender data-[state=active]:bg-rose-blush/10 dark:data-[state=active]:bg-moonlit-lavender/10 rounded-full transition-all duration-300">
               Vault
             </TabsTrigger>
             <div className="ml-auto flex items-center gap-2 pr-2">
@@ -119,25 +157,50 @@ function App() {
             </div>
           </TabsList>
 
-          <TabsContent value="feed" className="m-0">
-            <ClientFeed properties={analyzedProperties} onBack={handleBack} />
-          </TabsContent>
+          <AnimatePresence mode="wait">
+            <TabsContent value="feed" className="m-0">
+              <motion.div
+                key="feed"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <ClientFeed properties={analyzedProperties} onBack={handleBack} />
+              </motion.div>
+            </TabsContent>
 
-          <TabsContent value="market" className="m-0">
-            <div className="container mx-auto p-6">
-              <MarketOverview properties={analyzedProperties} />
-            </div>
-          </TabsContent>
+            <TabsContent value="market" className="m-0">
+              <motion.div
+                key="market"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                className="container mx-auto p-6"
+              >
+                <MarketOverview properties={analyzedProperties} />
+              </motion.div>
+            </TabsContent>
 
-          <TabsContent value="vault" className="m-0">
-            <div className="container mx-auto">
-              <PrivateVault documents={documents || []} />
-            </div>
-          </TabsContent>
+            <TabsContent value="vault" className="m-0">
+              <motion.div
+                key="vault"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                className="container mx-auto"
+              >
+                <PrivateVault documents={documents || []} />
+              </motion.div>
+            </TabsContent>
+          </AnimatePresence>
         </Tabs>
 
         <AIConcierge properties={analyzedProperties} userPortfolio={analyzedProperties} />
-      </div>
+      </motion.div>
+      <ThemeToggle />
       <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
       <LanguageDetectionBanner />
       <LiveAlertToast />
