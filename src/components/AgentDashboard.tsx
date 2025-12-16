@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Property } from '@/lib/types'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
@@ -10,6 +11,7 @@ import { PriceSparkline } from './PriceSparkline'
 import { PortfolioValueTracker } from './PortfolioValueTracker'
 import { MarketVolatilityControls } from './MarketVolatilityControls'
 import { PatternAlertNotifications } from './PatternAlertNotifications'
+import { PropertyComparisonSelector, PropertyCardWithSelection } from './PropertyComparisonSelector'
 
 interface AgentDashboardProps {
   properties: Property[]
@@ -19,6 +21,19 @@ interface AgentDashboardProps {
 }
 
 export function AgentDashboard({ properties, watchlistProperties, riskProperties, onBack }: AgentDashboardProps) {
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  const toggleProperty = (id: string) => {
+    setSelectedIds(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(pid => pid !== id)
+      } else if (prev.length < 4) {
+        return [...prev, id]
+      }
+      return prev
+    })
+  }
+
   return (
     <div className="min-h-screen bg-onyx-deep text-foreground">
       <header className="border-b border-border bg-onyx-surface sticky top-0 z-40">
@@ -82,7 +97,7 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
             ) : (
               <div className="grid gap-4">
                 {watchlistProperties.map((property, index) => (
-                  <PropertyCard key={property.id} property={property} index={index} />
+                  <PropertyCard key={property.id} property={property} index={index} selectedIds={selectedIds} onToggle={toggleProperty} />
                 ))}
               </div>
             )}
@@ -100,7 +115,7 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
             ) : (
               <div className="grid gap-4">
                 {riskProperties.map((property, index) => (
-                  <PropertyCard key={property.id} property={property} index={index} showMap />
+                  <PropertyCard key={property.id} property={property} index={index} showMap selectedIds={selectedIds} onToggle={toggleProperty} />
                 ))}
               </div>
             )}
@@ -113,13 +128,14 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
             </h2>
             <div className="grid gap-4">
               {properties.map((property, index) => (
-                <PropertyCard key={property.id} property={property} index={index} />
+                <PropertyCard key={property.id} property={property} index={index} selectedIds={selectedIds} onToggle={toggleProperty} />
               ))}
             </div>
           </section>
         </div>
       </main>
 
+      <PropertyComparisonSelector properties={properties} initialSelectedIds={selectedIds} />
       <MarketVolatilityControls />
     </div>
   )
@@ -145,8 +161,17 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
   )
 }
 
-function PropertyCard({ property, index, showMap }: { property: Property; index: number; showMap?: boolean }) {
-  return (
+function PropertyCard({ property, index, showMap, selectedIds, onToggle }: { 
+  property: Property; 
+  index: number; 
+  showMap?: boolean;
+  selectedIds?: string[];
+  onToggle?: (id: string) => void;
+}) {
+  const isSelected = selectedIds?.includes(property.id) || false
+  const disabled = !isSelected && (selectedIds?.length || 0) >= 4
+
+  const cardContent = (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -219,4 +244,19 @@ function PropertyCard({ property, index, showMap }: { property: Property; index:
       </Card>
     </motion.div>
   )
+
+  if (onToggle) {
+    return (
+      <PropertyCardWithSelection
+        property={property}
+        isSelected={isSelected}
+        onToggle={() => onToggle(property.id)}
+        disabled={disabled}
+      >
+        {cardContent}
+      </PropertyCardWithSelection>
+    )
+  }
+
+  return cardContent
 }

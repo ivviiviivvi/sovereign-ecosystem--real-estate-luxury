@@ -41,11 +41,11 @@ This platform requires dual user flows (agent/client), sophisticated compliance 
 - Success criteria: Calculations are accurate, slider responds smoothly to drag, visual feedback is immediate
 
 **AI Concierge**
-- Functionality: Intelligent recommendation engine with floating chat interface that provides real-time, personalized property suggestions based on user preferences, portfolio analysis, and market conditions
-- Purpose: Delivers proactive insights including property matches, lease expiration alerts, refinancing opportunities, and portfolio diversification advice
-- Trigger: Floating action button in bottom right (shows notification badge when new insights available)
-- Progression: Client taps button → Concierge panel slides up → Displays categorized insights (recommendations, alerts, opportunities, advice) sorted by urgency → Each insight shows property details, match score, reasons, and action buttons → Client can customize preferences via settings icon → Insights refresh in real-time as properties and preferences change
-- Success criteria: Recommendations are contextually relevant with high match scores (80+), urgency levels are accurate, preference customization affects future recommendations, interface feels conversational and helpful
+- Functionality: Intelligent recommendation engine with floating chat interface that provides real-time, personalized property suggestions based on user preferences, portfolio analysis, and market conditions. **Side-by-side property comparison** allows selecting up to 4 properties to compare across all key metrics (price, cap rate, ROI, size, amenities) with AI-generated insights highlighting the best values, important considerations, potential risks, and strategic recommendations.
+- Purpose: Delivers proactive insights including property matches, lease expiration alerts, refinancing opportunities, and portfolio diversification advice. **Property comparison provides comprehensive side-by-side analysis with intelligent recommendations to help users make data-driven investment decisions.**
+- Trigger: Floating action button in bottom right (shows notification badge when new insights available). **Property selection checkboxes appear on property cards in agent dashboard** - click to select up to 4 properties, then click "Compare" in the floating comparison panel.
+- Progression: Client taps button → Concierge panel slides up → Displays categorized insights (recommendations, alerts, opportunities, advice) sorted by urgency → Each insight shows property details, match score, reasons, and action buttons → Client can customize preferences via settings icon → Insights refresh in real-time as properties and preferences change. **For comparison: Select properties via checkboxes → Selection counter appears in floating panel (bottom-right) → Click "Compare" button → Full-screen comparison modal opens → AI generates insights automatically → View grid comparison (all metrics side-by-side) or detailed view (full property cards with all data) → Toggle between views → Best values highlighted with champagne gold rings → AI insights categorized by type (winner, consideration, warning, recommendation) → Click regenerate to get fresh AI analysis → Remove properties from comparison or close modal to return**
+- Success criteria: Recommendations are contextually relevant with high match scores (80+), urgency levels are accurate, preference customization affects future recommendations, interface feels conversational and helpful. **Comparison: Up to 4 properties can be selected simultaneously, selection state persists while browsing, best values accurately identified per metric, AI insights are relevant and actionable (4-6 insights covering all categories), grid/detailed views render correctly, modal is responsive and performs smoothly, removing properties updates comparison in real-time**
 
 **Private Vault (Document Management)**
 - Functionality: Secure document storage with time-limited sharing and privacy controls
@@ -73,6 +73,10 @@ This platform requires dual user flows (agent/client), sophisticated compliance 
 - **No Matching Recommendations**: Display empty state in AI Concierge suggesting preference adjustments, show general market insights
 - **Stale Preferences**: Prompt user to review preferences after 30 days or when match scores consistently low
 - **Multiple High-Priority Insights**: Prioritize by urgency (high > medium > low), then by insight type (alerts > opportunities > recommendations > advice)
+- **Property Comparison Empty State**: Show instructional message when fewer than 2 properties selected, prevent opening comparison modal
+- **Property Comparison Selection Limit**: Disable selection UI when 4 properties already selected, show tooltip explaining maximum
+- **Property Comparison AI Failure**: Show error toast if AI insights fail to generate, allow manual retry, comparison metrics still functional
+- **Property Comparison with Missing Data**: Display "N/A" for missing metrics, exclude from "best value" highlighting, AI insights acknowledge data gaps
 - **Market Simulation Extreme Values**: Constrain volatility slider to prevent unrealistic market swings, cap update frequency to prevent performance issues, persist control settings between sessions
 - **Historical Replay Empty State**: Show "Waiting for market data..." message when no snapshots recorded yet, begin recording automatically
 - **Historical Replay Memory Management**: Automatically prune snapshots older than selected time range to prevent memory issues, limit to 1000 snapshots maximum
@@ -175,6 +179,10 @@ Animations should feel physics-based and luxurious, with easing curves that mimi
   - MessageSquare (SMS notifications)
   - Send (delivery settings)
   - CheckCircle/XCircle/Clock (delivery status indicators)
+  - GitCompare (property comparison)
+  - Check (selection confirmation)
+  - Award (best value indicator)
+  - Lightbulb (considerations)
 - **Spacing**: 
   - Container padding: px-6 (mobile), px-12 (desktop)
   - Card gaps: gap-4 (tight grids), gap-8 (property cards)
