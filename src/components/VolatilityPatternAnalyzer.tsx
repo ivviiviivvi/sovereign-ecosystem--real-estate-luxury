@@ -4,9 +4,10 @@ import { TrendingUp, TrendingDown, Activity, Zap, AlertCircle } from 'lucide-rea
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
 import { useMarketTickers } from '@/hooks/use-market-data'
+import { patternAlertService, PatternType, VolatilityPattern as AlertPattern } from '@/lib/pattern-alerts'
 
 interface VolatilityPattern {
-  type: 'surge' | 'crash' | 'oscillation' | 'steady' | 'recovery'
+  type: PatternType
   confidence: number
   description: string
   icon: React.ReactNode
@@ -39,6 +40,26 @@ export function VolatilityPatternAnalyzer() {
         setCurrentPattern(pattern)
         
         if (pattern) {
+          const recentVolatility = calculateVolatility(updated.slice(-5))
+          const recent = updated.slice(-5)
+          const previous = updated.slice(-10, -5)
+          const recentAvg = recent.reduce((sum, v) => sum + v, 0) / recent.length
+          const previousAvg = previous.reduce((sum, v) => sum + v, 0) / previous.length
+          const trend = recentAvg - previousAvg
+          
+          const alertPattern: AlertPattern = {
+            type: pattern.type,
+            confidence: pattern.confidence,
+            description: pattern.description,
+            metrics: {
+              trend,
+              volatility: recentVolatility,
+              velocity: trend
+            }
+          }
+          
+          patternAlertService.addAlert(alertPattern)
+          
           setPatternHistory(prevHistory => {
             const newEntry: PatternHistory = {
               timestamp: Date.now(),
@@ -78,6 +99,50 @@ export function VolatilityPatternAnalyzer() {
     const trend = recentAvg - previousAvg
     const volatilityChange = recentVolatility - previousVolatility
 
+    const recentMin = Math.min(...recent)
+    const recentMax = Math.max(...recent)
+    const range = recentMax - recentMin
+    
+    const isBreakout = recentAvg > previousAvg + 3 && recentVolatility > 2
+    const isBreakdown = recentAvg < previousAvg - 3 && recentVolatility > 2
+    const isConsolidation = range < 1.5 && recentVolatility < 1
+    
+    const previousMin = Math.min(...previous)
+    const isReversal = previousAvg < 96 && recentAvg > 99 && trend > 2
+
+    if (isBreakout) {
+      return {
+        type: 'breakout',
+        confidence: Math.min(95, 75 + Math.abs(trend) * 4),
+        description: 'Price breaking above resistance levels',
+        icon: <TrendingUp className="w-4 h-4" />,
+        color: 'text-emerald-400',
+        bgColor: 'bg-emerald-500/10 border-emerald-500/30'
+      }
+    }
+    
+    if (isBreakdown) {
+      return {
+        type: 'breakdown',
+        confidence: Math.min(95, 75 + Math.abs(trend) * 4),
+        description: 'Price breaking below support levels',
+        icon: <TrendingDown className="w-4 h-4" />,
+        color: 'text-rose-400',
+        bgColor: 'bg-rose-500/10 border-rose-500/30'
+      }
+    }
+    
+    if (isReversal) {
+      return {
+        type: 'reversal',
+        confidence: Math.min(90, 70 + Math.abs(trend) * 3),
+        description: 'Potential trend reversal forming',
+        icon: <Zap className="w-4 h-4" />,
+        color: 'text-purple-400',
+        bgColor: 'bg-purple-500/10 border-purple-500/30'
+      }
+    }
+    
     if (trend > 2 && recentVolatility < 2) {
       return {
         type: 'surge',
@@ -119,6 +184,17 @@ export function VolatilityPatternAnalyzer() {
         icon: <Zap className="w-4 h-4" />,
         color: 'text-blue-400',
         bgColor: 'bg-blue-500/10 border-blue-500/30'
+      }
+    }
+    
+    if (isConsolidation) {
+      return {
+        type: 'consolidation',
+        confidence: 80,
+        description: 'Market consolidating in narrow range',
+        icon: <Activity className="w-4 h-4" />,
+        color: 'text-cyan-400',
+        bgColor: 'bg-cyan-500/10 border-cyan-500/30'
       }
     }
     

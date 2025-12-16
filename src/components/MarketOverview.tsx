@@ -6,6 +6,8 @@ import { PortfolioValueTracker } from './PortfolioValueTracker'
 import { MarketVolatilityControls } from './MarketVolatilityControls'
 import { HistoricalReplay } from './HistoricalReplay'
 import { VolatilityPatternAnalyzer } from './VolatilityPatternAnalyzer'
+import { PatternAlertSettings } from './PatternAlertSettings'
+import { PatternAlertDashboard } from './PatternAlertDashboard'
 import { Property } from '@/lib/types'
 
 interface MarketOverviewProps {
@@ -23,9 +25,12 @@ export function MarketOverview({ properties = [] }: MarketOverviewProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold text-champagne-gold mb-2">Market Overview</h2>
-        <p className="text-slate-grey">Real-time market intelligence</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-3xl font-bold text-champagne-gold mb-2">Market Overview</h2>
+          <p className="text-slate-grey">Real-time market intelligence</p>
+        </div>
+        <PatternAlertSettings />
       </div>
 
       {properties.length > 0 && (
@@ -186,6 +191,8 @@ export function MarketOverview({ properties = [] }: MarketOverviewProps) {
           </div>
         </div>
       </Card>
+
+      <PatternAlertDashboard />
 
       <VolatilityPatternAnalyzer />
 

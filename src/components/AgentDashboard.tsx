@@ -9,6 +9,7 @@ import { LivePriceDisplay } from './LivePriceDisplay'
 import { PriceSparkline } from './PriceSparkline'
 import { PortfolioValueTracker } from './PortfolioValueTracker'
 import { MarketVolatilityControls } from './MarketVolatilityControls'
+import { PatternAlertNotifications } from './PatternAlertNotifications'
 
 interface AgentDashboardProps {
   properties: Property[]
@@ -26,12 +27,15 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
             <h1 className="text-3xl font-bold text-champagne-gold">Portfolio Shield</h1>
             <p className="text-slate-grey text-sm">Compliance Intelligence Dashboard</p>
           </div>
-          <button
-            onClick={onBack}
-            className="text-slate-grey hover:text-champagne-gold transition-colors"
-          >
-            Switch View
-          </button>
+          <div className="flex items-center gap-4">
+            <PatternAlertNotifications />
+            <button
+              onClick={onBack}
+              className="text-slate-grey hover:text-champagne-gold transition-colors"
+            >
+              Switch View
+            </button>
+          </div>
         </div>
         <MarketTicker />
       </header>

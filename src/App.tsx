@@ -11,6 +11,8 @@ import { ClientFeed } from './components/ClientFeed'
 import { AIConcierge } from './components/AIConcierge'
 import { PrivateVault } from './components/PrivateVault'
 import { MarketOverview } from './components/MarketOverview'
+import { PatternAlertNotifications } from './components/PatternAlertNotifications'
+import { LiveAlertToast } from './components/LiveAlertToast'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
 import { Volume2, VolumeX } from 'lucide-react'
 import { soundManager } from './lib/sound-manager'
@@ -88,6 +90,7 @@ function App() {
           onBack={handleBack}
         />
         <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
+        <LiveAlertToast />
         <Toaster theme="dark" position="top-center" />
       </>
     )
@@ -107,6 +110,9 @@ function App() {
             <TabsTrigger value="vault" className="data-[state=active]:text-champagne-gold">
               Vault
             </TabsTrigger>
+            <div className="ml-auto flex items-center gap-2 pr-2">
+              <PatternAlertNotifications />
+            </div>
           </TabsList>
 
           <TabsContent value="feed" className="m-0">
@@ -129,6 +135,7 @@ function App() {
         <AIConcierge properties={analyzedProperties} userPortfolio={analyzedProperties} />
       </div>
       <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
+      <LiveAlertToast />
       <Toaster theme="dark" position="top-center" />
     </>
   )
