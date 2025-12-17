@@ -2,7 +2,37 @@
 
 A sophisticated, AI-powered luxury real estate platform featuring advanced UI/UX patterns, glassmorphism design, and intelligent property analytics.
 
-## Latest Features (v5)
+## Latest Features (v6) - Professional Contractor Tools
+
+### 🤝 Real-time Collaboration
+- **Live Multi-User Sessions**: Multiple contractors can view and interact with measurements simultaneously
+- **Real-time Comments**: Thread conversations on specific measurements with instant updates
+- **Contractor Presence**: See who's online with color-coded avatars and live cursor tracking
+- **Activity Feed**: Track all changes and interactions in real-time
+- **Access Control**: Granular permissions (view, comment, edit) for each contractor
+- **Session Management**: Automatic session creation when sharing measurement collections
+
+### 📡 Offline Mode with Auto-Sync
+- **Seamless Offline Operation**: Continue working in the field without internet connectivity
+- **Local-First Architecture**: All measurements saved locally before cloud sync
+- **Smart Queue System**: Changes queued and synced automatically when connection restored
+- **Retry Logic**: Failed syncs automatically retry up to 3 times
+- **Visual Status Indicator**: Always-visible sync status in bottom-right corner
+- **Persistent Queue**: Pending changes survive page refreshes and app restarts
+- **Detailed Status View**: Expandable panel showing sync progress, pending changes, and errors
+
+### 🏠 AR Room Templates with Spatial Recognition
+- **8 Pre-built Templates**: Kitchen, Bedroom, Bathroom, Living Room, Dining Room, Office, Hallway, Closet
+- **Intelligent Room Detection**: AI-powered spatial analysis to identify room types
+- **Confidence Scoring**: 0-100% confidence ratings based on dimensional analysis
+- **Smart Measurement Presets**: Each template includes 3-5 contextual measurements
+- **Auto-Labeling**: Measurements automatically labeled based on room context
+- **Dimension Analysis**: Compares actual vs typical dimensions for room type
+- **One-Click Application**: Select any template measurement to begin with smart defaults
+
+**See [COLLABORATION_FEATURES.md](./COLLABORATION_FEATURES.md) for complete documentation.**
+
+## Previous Features (v5)
 
 ### 🌟 Constellation Particle System
 - **Meaningful Patterns**: Particle background now includes three thematic constellation patterns:

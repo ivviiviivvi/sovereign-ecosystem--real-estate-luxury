@@ -20,6 +20,10 @@ import { MeasurementExport } from './MeasurementExport'
 import { MeasurementAnnotations } from './MeasurementAnnotations'
 import { BatchMeasurementExport } from './BatchMeasurementExport'
 import { ContractorWorkspace } from './ContractorWorkspace'
+import { ARRoomTemplates } from './ARRoomTemplates'
+import { OfflineSyncIndicator } from './OfflineSyncIndicator'
+import { offlineSyncService } from '@/lib/offline-sync-service'
+import { RoomTemplate } from '@/lib/spatial-recognition-service'
 
 interface MeasurementPoint {
   x: number
@@ -66,6 +70,8 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
   const [labelInput, setLabelInput] = useState('')
   const [activePreset, setActivePreset] = useState<MeasurementPreset | null>(null)
   const [currentSnapshotUrl, setCurrentSnapshotUrl] = useState<string | undefined>(undefined)
+  const [activeTemplate, setActiveTemplate] = useState<RoomTemplate | null>(null)
+  const [measuredDimensions, setMeasuredDimensions] = useState<{ width: number; length: number; height: number } | undefined>(undefined)
   
   const [persistedMeasurements, setPersistedMeasurements] = useKV<MeasurementType[]>('measurements', [])
   
@@ -483,6 +489,8 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
 
         setPersistedMeasurements(prev => [...(prev || []), persistedMeasurement])
         
+        offlineSyncService.queueChange('measurement_added', persistedMeasurement)
+        
         setCurrentMeasurement(null)
         soundManager.play('success')
         toast.success('Measurement added', {
@@ -587,6 +595,22 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
     soundManager.play('success')
     toast.success(`Using "${preset.name}" preset`, {
       description: preset.description || 'Tap two points to measure'
+    })
+  }
+
+  const handleTemplateSelect = (template: RoomTemplate, preset: MeasurementPreset) => {
+    setActiveTemplate(template)
+    setActivePreset(preset)
+    setMeasurementMode(true)
+    setShowOverlay(false)
+    
+    if (preset.defaultLength) {
+      setScaleFactor(preset.defaultLength / 10)
+    }
+    
+    soundManager.play('success')
+    toast.success(`Using ${template.name} template`, {
+      description: `Measuring: ${preset.name}`
     })
   }
 
@@ -750,6 +774,10 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
             </AnimatePresence>
 
             <div className="flex gap-2">
+              <ARRoomTemplates 
+                onSelectTemplate={handleTemplateSelect}
+                currentDimensions={measuredDimensions}
+              />
               <MeasurementPresets onSelectPreset={handlePresetSelect} />
               <Button
                 variant={measurementMode ? 'default' : 'secondary'}
@@ -1038,6 +1066,8 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
           </div>
         </>
       )}
+      
+      <OfflineSyncIndicator />
     </motion.div>
   )
 }

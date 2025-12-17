@@ -20,6 +20,8 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { soundManager } from '@/lib/sound-manager'
 import { toast } from 'sonner'
+import { CollaborationView } from './CollaborationView'
+import { collaborationService } from '@/lib/collaboration-service'
 
 interface ContractorWorkspaceProps {
   properties: Property[]
@@ -49,6 +51,7 @@ export function ContractorWorkspace({ properties, measurements }: ContractorWork
   
   const [editingCollection, setEditingCollection] = useState<string | null>(null)
   const [sharingCollection, setSharingCollection] = useState<MeasurementCollection | null>(null)
+  const [activeSession, setActiveSession] = useState<string | null>(null)
 
   const createCollection = () => {
     if (!collectionName.trim()) {
@@ -106,9 +109,12 @@ export function ContractorWorkspace({ properties, measurements }: ContractorWork
       (prev || []).map(c => c.id === collection.id ? updatedCollection : c)
     )
 
+    const session = collaborationService.createSession(collection.id)
+    setActiveSession(session.id)
+
     soundManager.play('success')
     toast.success('Collection shared', {
-      description: `Shared with ${contractorIds.length} contractor(s)`
+      description: `Shared with ${contractorIds.length} contractor(s) • Live collaboration enabled`
     })
     setSharingCollection(null)
   }
@@ -482,7 +488,20 @@ export function ContractorWorkspace({ properties, measurements }: ContractorWork
 
                       <Separator className="my-4" />
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
+                        {collection.sharedWith.length > 0 && (
+                          <CollaborationView
+                            sessionId={`session-${collection.id}`}
+                            currentContractor={{
+                              id: 'current-user',
+                              name: 'You',
+                              email: 'you@example.com',
+                              inviteCode: 'OWNER',
+                              accessLevel: 'edit'
+                            }}
+                            measurements={collection.measurements}
+                          />
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
