@@ -23,6 +23,7 @@ interface TestSession {
   duration: number
   userName?: string
   userAvatar?: string
+  teamId?: string
 }
 
 interface LeaderboardEntry {

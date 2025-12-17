@@ -27,6 +27,7 @@ interface TestSession {
   failedTests: number
   duration: number
   userName?: string
+  teamId?: string
 }
 
 interface ComparisonMetrics {

@@ -20,6 +20,9 @@ import { ARTutorialVideo } from './ARTutorialVideo'
 import { TestCompletionCertificate } from './TestCompletionCertificate'
 import { TestLeaderboard } from './TestLeaderboard'
 import { TestSessionComparison } from './TestSessionComparison'
+import { TeamLeaderboard } from './TeamLeaderboard'
+import { TestDataExport } from './TestDataExport'
+import { AutomatedTestSchedule } from './AutomatedTestSchedule'
 import { soundManager } from '@/lib/sound-manager'
 import { toast } from 'sonner'
 import { useKV } from '@github/spark/hooks'
@@ -49,6 +52,7 @@ interface TestSession {
   duration: number
   userName?: string
   userAvatar?: string
+  teamId?: string
 }
 
 export function TestingDashboard() {
@@ -65,7 +69,8 @@ export function TestingDashboard() {
     passedTests: 0,
     failedTests: 0,
     duration: 0,
-    userName: 'Test User'
+    userName: 'Test User',
+    teamId: 'alpha'
   })
   const [testSessions, setTestSessions] = useKV<TestSession[]>('test-sessions-history', [])
 
@@ -200,7 +205,8 @@ export function TestingDashboard() {
       passedTests: 0,
       failedTests: 0,
       duration: 0,
-      userName: 'Test User'
+      userName: 'Test User',
+      teamId: 'alpha'
     }
     setTestSession(newSession)
     soundManager.play('glassTap')
@@ -223,7 +229,8 @@ export function TestingDashboard() {
         passedTests: 0,
         failedTests: 0,
         duration: 0,
-        userName: 'Test User'
+        userName: 'Test User',
+        teamId: 'alpha'
       }
       return {
         ...current,
@@ -346,7 +353,10 @@ export function TestingDashboard() {
               </Button>
 
               <TestLeaderboard />
+              <TeamLeaderboard />
               <TestSessionComparison />
+              <TestDataExport />
+              <AutomatedTestSchedule />
             </div>
           </div>
         </DialogHeader>
