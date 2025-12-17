@@ -16,6 +16,7 @@ import { ScrollArea } from './ui/scroll-area'
 import { soundManager } from '@/lib/sound-manager'
 import { toast } from 'sonner'
 import { MeasurementPresets } from './MeasurementPresets'
+import { MeasurementExport } from './MeasurementExport'
 
 interface MeasurementPoint {
   x: number
@@ -61,6 +62,7 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
   const [editingLabel, setEditingLabel] = useState<string | null>(null)
   const [labelInput, setLabelInput] = useState('')
   const [activePreset, setActivePreset] = useState<MeasurementPreset | null>(null)
+  const [currentSnapshotUrl, setCurrentSnapshotUrl] = useState<string | undefined>(undefined)
   
   const lastTouchDistance = useRef<number>(0)
   const lastTouchAngle = useRef<number>(0)
@@ -581,6 +583,7 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
 
     try {
       const dataUrl = canvas.toDataURL('image/png')
+      setCurrentSnapshotUrl(dataUrl)
       
       const newDocument: Document = {
         id: `ar-snapshot-${Date.now()}`,
@@ -842,7 +845,13 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
                     <div className="flex items-center justify-between">
                       <h5 className="text-sm font-semibold text-foreground">Measurements</h5>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Scale Factor:</span>
+                        <MeasurementExport
+                          measurements={measurements}
+                          property={property}
+                          scaleFactor={scaleFactor}
+                          snapshotDataUrl={currentSnapshotUrl}
+                        />
+                        <span className="text-xs text-muted-foreground">Scale:</span>
                         <Input
                           type="number"
                           value={scaleFactor}
