@@ -18,6 +18,7 @@ import { ARPropertyViewer } from './ARPropertyViewer'
 import { PropertyComparisonSlider } from './PropertyComparisonSlider'
 import { FeatureDemoGuide } from './FeatureDemoGuide'
 import { TestingDashboard } from './TestingDashboard'
+import { TeamPerformanceDashboard } from './TeamPerformanceDashboard'
 import { soundManager } from '@/lib/sound-manager'
 
 interface AgentDashboardProps {
@@ -32,6 +33,7 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
   const [arProperty, setArProperty] = useState<Property | null>(null)
   const [comparisonPair, setComparisonPair] = useState<[Property, Property] | null>(null)
   const [showDemoGuide, setShowDemoGuide] = useState(false)
+  const [showTeamDashboard, setShowTeamDashboard] = useState(false)
 
   const toggleProperty = (id: string) => {
     setSelectedIds(prev => {
@@ -54,6 +56,10 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
     soundManager.play('glassTap')
   }
 
+  if (showTeamDashboard) {
+    return <TeamPerformanceDashboard onBack={() => setShowTeamDashboard(false)} />
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pearl-white via-background to-lavender-mist/20 dark:from-midnight-blue dark:via-background dark:to-moonlit-indigo/30 text-foreground transition-colors duration-700">
       <header className="border-b border-border/30 bg-card/60 backdrop-blur-xl sticky top-0 z-40 shadow-sm transition-colors duration-500">
@@ -63,6 +69,18 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
             <p className="text-muted-foreground text-sm font-light tracking-wide">Compliance Intelligence Dashboard</p>
           </div>
           <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowTeamDashboard(true)
+                soundManager.play('glassTap')
+              }}
+              className="gap-2 border-rose-blush/30 dark:border-moonlit-lavender/30 hover:bg-rose-blush/10 dark:hover:bg-moonlit-lavender/10"
+            >
+              <TrendingUp className="w-4 h-4" />
+              Teams
+            </Button>
             <TestingDashboard />
             <Button
               variant="outline"

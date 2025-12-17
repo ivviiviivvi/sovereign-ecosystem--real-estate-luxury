@@ -1,519 +1,404 @@
-import { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Users, TrendingUp, TrendingDown, BarChart3, LineChart as LineChartIcon,
-  Target, Clock, Award, Zap, Filter, Download, Maximize2
-} from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from './ui/dialog'
+import { useState, useRef, useEffect } from 'react'
+import { useKV } from '@github/spark/hooks'
+import { motion } from 'framer-motion'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
-import { Card } from './ui/card'
 import { Badge } from './ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
-import { ScrollArea } from './ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
-import { Separator } from './ui/separator'
-import { Progress } from './ui/progress'
-import { ChartExportDialog } from './ChartExportDialog'
-import { useKV } from '@github/spark/hooks'
-import { soundManager } from '@/lib/sound-manager'
+import { Team, teamPerformanceService, TeamPerformance, TeamComparison, PDFBranding } from '@/lib/team-performance-service'
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart'
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { DownloadSimple, Trophy, TrendUp, TrendDown, Users, Target, Clock, ChartLine } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
-interface TestSession {
-  id: string
-  startTime: string
-  endTime: string
-  completedModules: string[]
-  totalTests: number
-  passedTests: number
-  failedTests: number
-  duration: number
-  userName: string
-  userAvatar?: string
-  teamId?: string
-}
-
-interface TeamComparisonData {
-  teamId: string
-  teamName: string
-  totalMembers: number
-  totalSessions: number
-  averageSuccessRate: number
-  averageDuration: number
-  totalModulesCompleted: number
-  totalTestsRun: number
-  topPerformer: string
-  trend: 'up' | 'down' | 'stable'
-  trendPercent: number
-  color: string
-}
-
-interface TimeSeriesData {
-  date: string
-  [key: string]: string | number
-}
-
 export function TeamComparisonView() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [testSessions] = useKV<TestSession[]>('test-sessions-history', [])
-  const [selectedTeams, setSelectedTeams] = useState<string[]>([])
-  const [timeRange, setTimeRange] = useState<'week' | 'month' | 'all'>('month')
-  const [chartType, setChartType] = useState<'bar' | 'line' | 'radar'>('bar')
+  const [teams] = useKV<Team[]>('teams', [])
+  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([])
+  const [comparison, setComparison] = useState<TeamComparison | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
+  const chartRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
-  const teamColors = {
-    alpha: 'oklch(0.65 0.15 340)',
-    beta: 'oklch(0.65 0.15 260)',
-    gamma: 'oklch(0.65 0.15 120)',
-    delta: 'oklch(0.65 0.15 40)',
-    epsilon: 'oklch(0.65 0.15 180)'
+  const selectedTeams = (teams || []).filter(t => selectedTeamIds.includes(t.id))
+
+  useEffect(() => {
+    if (selectedTeamIds.length > 0 && teams) {
+      const teamsToCompare = teams.filter(t => selectedTeamIds.includes(t.id))
+      const comparisonData = teamPerformanceService.compareTeams(teamsToCompare)
+      setComparison(comparisonData)
+    } else {
+      setComparison(null)
+    }
+  }, [selectedTeamIds, teams])
+
+  const toggleTeam = (teamId: string) => {
+    setSelectedTeamIds(prev =>
+      prev.includes(teamId)
+        ? prev.filter(id => id !== teamId)
+        : [...prev, teamId]
+    )
   }
 
-  const allTeams = useMemo(() => {
-    if (!testSessions) return []
-    const teamSet = new Set<string>()
-    testSessions.forEach(session => {
-      if (session.teamId) teamSet.add(session.teamId)
-    })
-    return Array.from(teamSet)
-  }, [testSessions])
+  const exportToPDF = async () => {
+    if (!comparison) return
 
-  const teamComparisonData = useMemo((): TeamComparisonData[] => {
-    if (!testSessions) return []
+    setIsExporting(true)
+    toast.loading('Generating PDF...', { id: 'pdf-export' })
 
-    const teamsToCompare = selectedTeams.length > 0 ? selectedTeams : allTeams.slice(0, 3)
-
-    return teamsToCompare.map(teamId => {
-      const teamSessions = testSessions.filter(s => s.teamId === teamId)
+    try {
+      const chartDataUrls: { title: string; dataUrl: string }[] = []
       
-      const totalMembers = new Set(teamSessions.map(s => s.userName)).size
-      const totalTestsRun = teamSessions.reduce((sum, s) => sum + s.totalTests, 0)
-      const totalPassed = teamSessions.reduce((sum, s) => sum + s.passedTests, 0)
-      const averageSuccessRate = totalTestsRun > 0 ? (totalPassed / totalTestsRun) * 100 : 0
-      const averageDuration = teamSessions.length > 0
-        ? teamSessions.reduce((sum, s) => sum + s.duration, 0) / teamSessions.length
-        : 0
-      
-      const allModules = new Set<string>()
-      teamSessions.forEach(s => s.completedModules.forEach(m => allModules.add(m)))
-
-      const memberScores = new Map<string, number>()
-      teamSessions.forEach(s => {
-        const score = s.totalTests > 0 ? (s.passedTests / s.totalTests) * 100 : 0
-        const current = memberScores.get(s.userName) || 0
-        memberScores.set(s.userName, Math.max(current, score))
-      })
-      
-      let topPerformer = 'N/A'
-      let topScore = 0
-      memberScores.forEach((score, name) => {
-        if (score > topScore) {
-          topScore = score
-          topPerformer = name
-        }
-      })
-
-      const recentSessions = teamSessions.slice(-10)
-      const olderSessions = teamSessions.slice(-20, -10)
-      const recentAvg = recentSessions.length > 0
-        ? recentSessions.reduce((sum, s) => sum + (s.passedTests / (s.totalTests || 1)) * 100, 0) / recentSessions.length
-        : 0
-      const olderAvg = olderSessions.length > 0
-        ? olderSessions.reduce((sum, s) => sum + (s.passedTests / (s.totalTests || 1)) * 100, 0) / olderSessions.length
-        : recentAvg
-
-      let trend: 'up' | 'down' | 'stable' = 'stable'
-      let trendPercent = 0
-      
-      if (olderAvg > 0) {
-        const diff = recentAvg - olderAvg
-        trendPercent = (diff / olderAvg) * 100
-        if (Math.abs(trendPercent) > 5) {
-          trend = trendPercent > 0 ? 'up' : 'down'
+      for (const [key, ref] of Object.entries(chartRefs.current)) {
+        if (ref) {
+          const canvas = document.createElement('canvas')
+          canvas.width = 1200
+          canvas.height = 400
+          const ctx = canvas.getContext('2d')
+          
+          if (ctx) {
+            ctx.fillStyle = '#ffffff'
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            
+            const dataUrl = canvas.toDataURL('image/png')
+            chartDataUrls.push({ title: key, dataUrl })
+          }
         }
       }
 
-      return {
-        teamId,
-        teamName: teamId.charAt(0).toUpperCase() + teamId.slice(1),
-        totalMembers,
-        totalSessions: teamSessions.length,
-        averageSuccessRate,
-        averageDuration,
-        totalModulesCompleted: allModules.size,
-        totalTestsRun,
-        topPerformer,
-        trend,
-        trendPercent,
-        color: teamColors[teamId as keyof typeof teamColors] || teamColors.alpha
+      const branding: PDFBranding = {
+        companyName: 'The Sovereign Ecosystem',
+        primaryColor: '#E088AA',
+        secondaryColor: '#BA94DA',
+        accentColor: '#F7E7CE',
+        tagline: 'Excellence Through Insight',
+        contactInfo: 'Performance Analytics Division'
       }
-    })
-  }, [testSessions, selectedTeams, allTeams])
 
-  const timeSeriesData = useMemo((): TimeSeriesData[] => {
-    if (!testSessions || selectedTeams.length === 0) return []
+      const pdfDataUrl = await teamPerformanceService.exportToPDF(
+        comparison,
+        branding,
+        chartDataUrls
+      )
 
-    const dataMap = new Map<string, any>()
-    const teamsToTrack = selectedTeams.length > 0 ? selectedTeams : allTeams.slice(0, 3)
-
-    testSessions
-      .filter(s => teamsToTrack.includes(s.teamId || ''))
-      .forEach(session => {
-        const date = new Date(session.startTime).toLocaleDateString()
-        
-        if (!dataMap.has(date)) {
-          dataMap.set(date, { date })
-        }
-        
-        const dayData = dataMap.get(date)
-        const teamKey = session.teamId || 'unknown'
-        const successRate = session.totalTests > 0 ? (session.passedTests / session.totalTests) * 100 : 0
-        
-        if (!dayData[teamKey]) {
-          dayData[teamKey] = []
-        }
-        dayData[teamKey].push(successRate)
-      })
-
-    const result: TimeSeriesData[] = []
-    dataMap.forEach((dayData, date) => {
-      const entry: TimeSeriesData = { date }
+      await teamPerformanceService.downloadPDF(pdfDataUrl, 'team-comparison-report')
       
-      teamsToTrack.forEach(teamId => {
-        if (dayData[teamId]) {
-          const avg = dayData[teamId].reduce((a: number, b: number) => a + b, 0) / dayData[teamId].length
-          entry[teamId] = Math.round(avg)
-        } else {
-          entry[teamId] = 0
-        }
-      })
-      
-      result.push(entry)
-    })
-
-    return result.slice(-30)
-  }, [testSessions, selectedTeams, allTeams])
-
-  const handleTeamToggle = (teamId: string) => {
-    setSelectedTeams(prev => {
-      if (prev.includes(teamId)) {
-        return prev.filter(t => t !== teamId)
-      }
-      if (prev.length >= 5) {
-        toast.error('Maximum 5 teams can be compared at once')
-        return prev
-      }
-      return [...prev, teamId]
-    })
-    soundManager.play('glassTap')
+      toast.success('PDF exported successfully!', { id: 'pdf-export' })
+    } catch (error) {
+      console.error('PDF export failed:', error)
+      toast.error('Failed to export PDF', { id: 'pdf-export' })
+    } finally {
+      setIsExporting(false)
+    }
   }
 
-  const exportAllCharts = () => {
-    toast.success('Preparing charts for export...')
-    soundManager.play('glassTap')
+  if (!teams || teams.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-16">
+          <Users className="w-16 h-16 text-muted-foreground mb-4" />
+          <h3 className="text-xl font-serif font-semibold mb-2">No Teams Available</h3>
+          <p className="text-muted-foreground text-center">
+            Create teams first to view comparison data
+          </p>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          className="gap-2 bg-card/70 backdrop-blur-xl border-border/40 hover:border-rose-blush/50 dark:hover:border-moonlit-lavender/50 hover:shadow-lg hover:shadow-rose-blush/10 dark:hover:shadow-moonlit-lavender/10 transition-all duration-300"
-        >
-          <BarChart3 className="w-4 h-4" />
-          Team Comparison
-        </Button>
-      </DialogTrigger>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-serif font-semibold text-foreground">Team Comparison</h2>
+          <p className="text-muted-foreground mt-1">Compare performance metrics across multiple teams</p>
+        </div>
+        
+        {comparison && (
+          <Button
+            onClick={exportToPDF}
+            disabled={isExporting}
+            className="gap-2"
+          >
+            <DownloadSimple className="w-5 h-5" />
+            {isExporting ? 'Exporting...' : 'Export to PDF'}
+          </Button>
+        )}
+      </div>
 
-      <DialogContent className="max-w-7xl max-h-[95vh] bg-card/95 backdrop-blur-3xl border-border/40">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-serif text-rose-blush dark:text-moonlit-lavender flex items-center gap-3">
-            <Users className="w-6 h-6" />
-            Team Performance Comparison
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            Compare team performance metrics and trends side-by-side
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Select Teams:</span>
-            </div>
-            
-            <div className="flex flex-wrap gap-2">
-              {allTeams.map(teamId => (
-                <Button
-                  key={teamId}
-                  size="sm"
-                  variant={selectedTeams.includes(teamId) ? 'default' : 'outline'}
-                  onClick={() => handleTeamToggle(teamId)}
-                  className={selectedTeams.includes(teamId)
-                    ? 'bg-rose-blush/20 text-rose-blush dark:bg-moonlit-lavender/20 dark:text-moonlit-lavender border-rose-blush/50 dark:border-moonlit-lavender/50'
-                    : ''
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-serif">Select Teams to Compare</CardTitle>
+          <CardDescription>Choose at least 2 teams to view comparison data</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {teams.map((team) => (
+              <button
+                key={team.id}
+                onClick={() => toggleTeam(team.id)}
+                className={`
+                  relative p-4 rounded-xl border-2 transition-all duration-300 text-left
+                  ${selectedTeamIds.includes(team.id)
+                    ? 'border-primary bg-primary/5 shadow-lg shadow-primary/20'
+                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
                   }
-                >
-                  {teamId.charAt(0).toUpperCase() + teamId.slice(1)}
-                </Button>
-              ))}
-            </div>
+                `}
+              >
+                <div
+                  className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+                  style={{ backgroundColor: team.color }}
+                />
+                <div className="flex items-start justify-between mt-2">
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{team.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {team.members.length} members
+                    </p>
+                  </div>
+                  {selectedTeamIds.includes(team.id) && (
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      style={{ backgroundColor: team.color }}
+                    >
+                      ✓
+                    </div>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-            <div className="ml-auto flex items-center gap-2">
-              <Select value={timeRange} onValueChange={(v: any) => setTimeRange(v)}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="week">This Week</SelectItem>
-                  <SelectItem value="month">This Month</SelectItem>
-                  <SelectItem value="all">All Time</SelectItem>
-                </SelectContent>
-              </Select>
+      {comparison && selectedTeams.length >= 2 && (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-serif flex items-center gap-2">
+                <Trophy className="w-6 h-6 text-primary" weight="fill" />
+                Executive Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {comparison.insights.map((insight, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="flex items-start gap-3 p-4 rounded-lg bg-muted/30"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-bold text-primary">{idx + 1}</span>
+                    </div>
+                    <p className="text-sm">{insight}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-              <ChartExportDialog
-                chartId="team-comparison-chart"
-                chartTitle="Team Performance Comparison"
-              />
-            </div>
+          <div className="grid gap-6 md:grid-cols-2">
+            {comparison.comparisonMetrics.map((metric) => (
+              <Card key={metric.metric}>
+                <CardHeader>
+                  <CardTitle className="font-serif text-lg">{metric.metric}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {metric.teams.map((team, idx) => {
+                      const teamColor = selectedTeams.find(t => t.id === team.teamId)?.color || '#E088AA'
+                      const isTop3 = idx < 3
+                      const medalColors = ['#FFD700', '#C0C0C0', '#CD7F32']
+                      
+                      return (
+                        <div
+                          key={team.teamId}
+                          className="flex items-center gap-3 p-3 rounded-lg bg-muted/20"
+                        >
+                          <div
+                            className={`
+                              w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0
+                              ${isTop3 ? 'shadow-lg' : ''}
+                            `}
+                            style={{
+                              backgroundColor: isTop3 ? medalColors[idx] : teamColor
+                            }}
+                          >
+                            {team.rank}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{team.teamName}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold font-serif" style={{ color: teamColor }}>
+                              {team.value}{metric.metric.includes('Rate') ? '%' : ''}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
-          <ScrollArea className="h-[600px] pr-4">
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4" id="team-comparison-chart">
-                <AnimatePresence mode="popLayout">
-                  {teamComparisonData.map((team, index) => (
-                    <motion.div
-                      key={team.teamId}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <Card className="p-6 bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-xl border-border/40 hover:shadow-xl transition-all duration-300">
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h3 className="text-xl font-serif font-semibold mb-1"
-                                style={{ color: team.color }}>
-                                Team {team.teamName}
-                              </h3>
-                              <div className="flex items-center gap-2">
-                                <Users className="w-4 h-4 text-muted-foreground" />
-                                <span className="text-sm text-muted-foreground">
-                                  {team.totalMembers} member{team.totalMembers !== 1 ? 's' : ''}
-                                </span>
-                              </div>
-                            </div>
-                            
-                            <div className={`flex items-center gap-1 px-3 py-1 rounded-full ${
-                              team.trend === 'up'
-                                ? 'bg-green-500/10 text-green-600 dark:text-green-400'
-                                : team.trend === 'down'
-                                ? 'bg-red-500/10 text-red-600 dark:text-red-400'
-                                : 'bg-muted text-muted-foreground'
-                            }`}>
-                              {team.trend === 'up' ? (
-                                <TrendingUp className="w-4 h-4" />
-                              ) : team.trend === 'down' ? (
-                                <TrendingDown className="w-4 h-4" />
-                              ) : (
-                                <Target className="w-4 h-4" />
-                              )}
-                              <span className="text-xs font-medium">
-                                {team.trend === 'stable' ? 'Stable' : `${Math.abs(team.trendPercent).toFixed(1)}%`}
-                              </span>
-                            </div>
-                          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-serif flex items-center gap-2">
+                <ChartLine className="w-6 h-6 text-primary" />
+                Performance Trends
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="tests" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="tests">Tests Completed</TabsTrigger>
+                  <TabsTrigger value="success">Success Rate</TabsTrigger>
+                  <TabsTrigger value="scores">Average Score</TabsTrigger>
+                </TabsList>
 
-                          <Separator className="bg-border/40" />
-
-                          <div className="space-y-3">
-                            <div>
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm text-muted-foreground">Success Rate</span>
-                                <span className="text-lg font-semibold font-serif"
-                                  style={{ color: team.color }}>
-                                  {team.averageSuccessRate.toFixed(1)}%
-                                </span>
-                              </div>
-                              <Progress
-                                value={team.averageSuccessRate}
-                                className="h-2"
-                                style={{
-                                  '--progress-background': team.color
-                                } as any}
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3 pt-2">
-                              <div className="space-y-1">
-                                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <BarChart3 className="w-3 h-3" />
-                                  Tests Run
-                                </div>
-                                <div className="text-lg font-semibold font-serif">
-                                  {team.totalTestsRun}
-                                </div>
-                              </div>
-
-                              <div className="space-y-1">
-                                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <Target className="w-3 h-3" />
-                                  Modules
-                                </div>
-                                <div className="text-lg font-semibold font-serif">
-                                  {team.totalModulesCompleted}
-                                </div>
-                              </div>
-
-                              <div className="space-y-1">
-                                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  Avg Time
-                                </div>
-                                <div className="text-sm font-medium">
-                                  {Math.floor(team.averageDuration / 60)}m {team.averageDuration % 60}s
-                                </div>
-                              </div>
-
-                              <div className="space-y-1">
-                                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <Zap className="w-3 h-3" />
-                                  Sessions
-                                </div>
-                                <div className="text-sm font-medium">
-                                  {team.totalSessions}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <Separator className="bg-border/40" />
-
-                          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30">
-                            <Award className="w-5 h-5 text-rose-blush dark:text-moonlit-lavender" />
-                            <div className="flex-1 min-w-0">
-                              <div className="text-xs text-muted-foreground">Top Performer</div>
-                              <div className="text-sm font-medium truncate">{team.topPerformer}</div>
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-
-              {teamComparisonData.length > 0 && (
-                <>
-                  <Separator className="bg-border/40" />
-
-                  <Card className="p-6 bg-card/50 backdrop-blur-xl border-border/40" id="performance-trend-chart">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xl font-serif font-semibold">Performance Trends</h3>
-                      <div className="flex items-center gap-2">
-                        <Select value={chartType} onValueChange={(v: any) => setChartType(v)}>
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="bar">Bar Chart</SelectItem>
-                            <SelectItem value="line">Line Chart</SelectItem>
-                            <SelectItem value="radar">Radar</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        
-                        <ChartExportDialog
-                          chartId="performance-trend-chart"
-                          chartTitle="Performance Trends Over Time"
+                <TabsContent value="tests" className="mt-6">
+                  <div
+                    ref={(el) => chartRefs.current['tests-completed'] = el}
+                    className="w-full h-[400px]"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+                        <XAxis
+                          dataKey="label"
+                          data={comparison.teams[0]?.trends.labels || []}
+                          tick={{ fontSize: 12 }}
                         />
-                      </div>
-                    </div>
+                        <YAxis tick={{ fontSize: 12 }} />
+                        <Tooltip />
+                        <Legend />
+                        {comparison.teams.map((team) => {
+                          const teamColor = selectedTeams.find(t => t.id === team.teamId)?.color || '#E088AA'
+                          const data = team.trends.labels.map((label, idx) => ({
+                            label,
+                            value: team.trends.testsCompleted[idx]
+                          }))
+                          
+                          return (
+                            <Line
+                              key={team.teamId}
+                              data={data}
+                              type="monotone"
+                              dataKey="value"
+                              name={team.teamName}
+                              stroke={teamColor}
+                              strokeWidth={3}
+                              dot={{ fill: teamColor, r: 4 }}
+                            />
+                          )
+                        })}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </TabsContent>
 
-                    <div className="h-80 flex items-center justify-center bg-gradient-to-br from-muted/30 to-muted/10 rounded-xl border border-border/40" data-chart-container>
-                      <div className="text-center space-y-2">
-                        <LineChartIcon className="w-12 h-12 mx-auto text-muted-foreground/50" />
-                        <p className="text-sm text-muted-foreground">
-                          Performance trend visualization
-                        </p>
-                        <div className="flex items-center gap-4 justify-center pt-4">
-                          {teamComparisonData.map((team, idx) => (
-                            <div key={team.teamId} className="flex items-center gap-2">
-                              <div
-                                className="w-4 h-4 rounded-full"
-                                style={{ backgroundColor: team.color }}
-                                data-chart-line
-                                data-team={team.teamId}
-                              />
-                              <span className="text-xs font-medium">Team {team.teamName}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
+                <TabsContent value="success" className="mt-6">
+                  <div
+                    ref={(el) => chartRefs.current['success-rate'] = el}
+                    className="w-full h-[400px]"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+                        <XAxis
+                          dataKey="label"
+                          data={comparison.teams[0]?.trends.labels || []}
+                          tick={{ fontSize: 12 }}
+                        />
+                        <YAxis tick={{ fontSize: 12 }} unit="%" />
+                        <Tooltip />
+                        <Legend />
+                        {comparison.teams.map((team) => {
+                          const teamColor = selectedTeams.find(t => t.id === team.teamId)?.color || '#E088AA'
+                          const data = team.trends.labels.map((label, idx) => ({
+                            label,
+                            value: team.trends.successRates[idx]
+                          }))
+                          
+                          return (
+                            <Line
+                              key={team.teamId}
+                              data={data}
+                              type="monotone"
+                              dataKey="value"
+                              name={team.teamName}
+                              stroke={teamColor}
+                              strokeWidth={3}
+                              dot={{ fill: teamColor, r: 4 }}
+                            />
+                          )
+                        })}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </TabsContent>
 
-                  <Card className="p-6 bg-card/50 backdrop-blur-xl border-border/40" id="comparative-metrics-chart">
-                    <h3 className="text-xl font-serif font-semibold mb-6">Comparative Metrics</h3>
-                    
-                    <div className="space-y-6">
-                      {[
-                        { label: 'Success Rate', key: 'averageSuccessRate', max: 100, unit: '%' },
-                        { label: 'Modules Completed', key: 'totalModulesCompleted', max: 20, unit: '' },
-                        { label: 'Total Tests', key: 'totalTestsRun', max: Math.max(...teamComparisonData.map(t => t.totalTestsRun)), unit: '' }
-                      ].map((metric) => (
-                        <div key={metric.key} className="space-y-2" data-chart-bar data-metric={metric.key}>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{metric.label}</span>
-                          </div>
-                          <div className="space-y-2">
-                            {teamComparisonData.map((team) => {
-                              const value = team[metric.key as keyof TeamComparisonData] as number
-                              const percentage = (value / metric.max) * 100
-                              
-                              return (
-                                <div key={team.teamId} className="flex items-center gap-3">
-                                  <div className="w-24 text-sm text-muted-foreground">
-                                    Team {team.teamName}
-                                  </div>
-                                  <div className="flex-1 relative">
-                                    <div className="h-8 bg-muted/30 rounded-lg overflow-hidden">
-                                      <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${Math.min(percentage, 100)}%` }}
-                                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                                        className="h-full rounded-lg"
-                                        style={{ backgroundColor: team.color }}
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="w-20 text-right text-sm font-semibold font-serif"
-                                    style={{ color: team.color }}>
-                                    {value.toFixed(metric.unit === '%' ? 1 : 0)}{metric.unit}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-                </>
-              )}
+                <TabsContent value="scores" className="mt-6">
+                  <div
+                    ref={(el) => chartRefs.current['average-score'] = el}
+                    className="w-full h-[400px]"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+                        <XAxis
+                          dataKey="label"
+                          data={comparison.teams[0]?.trends.labels || []}
+                          tick={{ fontSize: 12 }}
+                        />
+                        <YAxis tick={{ fontSize: 12 }} />
+                        <Tooltip />
+                        <Legend />
+                        {comparison.teams.map((team) => {
+                          const teamColor = selectedTeams.find(t => t.id === team.teamId)?.color || '#E088AA'
+                          const data = team.trends.labels.map((label, idx) => ({
+                            label,
+                            value: team.trends.scores[idx]
+                          }))
+                          
+                          return (
+                            <Line
+                              key={team.teamId}
+                              data={data}
+                              type="monotone"
+                              dataKey="value"
+                              name={team.teamName}
+                              stroke={teamColor}
+                              strokeWidth={3}
+                              dot={{ fill: teamColor, r: 4 }}
+                            />
+                          )
+                        })}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
-              {teamComparisonData.length === 0 && (
-                <div className="text-center py-12">
-                  <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                  <p className="text-muted-foreground">
-                    Select teams to compare their performance
-                  </p>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </div>
-      </DialogContent>
-    </Dialog>
+      {selectedTeamIds.length > 0 && selectedTeamIds.length < 2 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Target className="w-16 h-16 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-serif font-semibold mb-2">Select More Teams</h3>
+            <p className="text-muted-foreground text-center">
+              Select at least 2 teams to view comparison data
+            </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   )
 }

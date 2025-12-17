@@ -1,388 +1,409 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Mail, Clock, Calendar, Plus, Edit, Trash2, Send, CheckCircle2,
-  Settings, Users, FileText, Palette, Eye, Copy, ToggleLeft, ToggleRight
-} from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from './ui/dialog'
-import { Button } from './ui/button'
-import { Card } from './ui/card'
-import { Badge } from './ui/badge'
-import { Label } from './ui/label'
-import { Input } from './ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
-import { Textarea } from './ui/textarea'
-import { Switch } from './ui/switch'
-import { Separator } from './ui/separator'
-import { ScrollArea } from './ui/scroll-area'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
-import {
-  EmailSchedule,
-  EmailTemplate,
-  emailScheduleService
-} from '@/lib/email-schedule-service'
-import { chartExportService } from '@/lib/chart-export-service'
-import { soundManager } from '@/lib/sound-manager'
-import { toast } from 'sonner'
+import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
+import { Switch } from './ui/switch'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
+import { Badge } from './ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
+import { Textarea } from './ui/textarea'
+import { EmailSchedule, EmailTemplate, emailScheduleService } from '@/lib/email-schedule-service'
+import { Team } from '@/lib/team-performance-service'
+import {
+  EnvelopeSimple,
+  Plus,
+  Clock,
+  Trash,
+  PaperPlaneTilt,
+  CheckCircle,
+  Warning,
+  Calendar,
+  Users,
+  Palette
+} from '@phosphor-icons/react'
+import { toast } from 'sonner'
 
-interface EmailSchedulerProps {
-  availableCharts?: string[]
-}
-
-export function EmailScheduler({ availableCharts = [] }: EmailSchedulerProps) {
-  const [isOpen, setIsOpen] = useState(false)
+export function EmailScheduler() {
   const [schedules, setSchedules] = useKV<EmailSchedule[]>('email-schedules', [])
   const [templates, setTemplates] = useKV<EmailTemplate[]>('email-templates', [])
-  const [isCreating, setIsCreating] = useState(false)
-  const [editingSchedule, setEditingSchedule] = useState<EmailSchedule | null>(null)
-  const [previewHtml, setPreviewHtml] = useState<string>('')
+  const [teams] = useKV<Team[]>('teams', [])
+  
+  const [isCreatingSchedule, setIsCreatingSchedule] = useState(false)
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false)
 
-  const defaultTemplate: EmailTemplate = {
-    id: 'default',
-    name: 'Default Performance Report',
-    subject: 'Your Weekly Performance Report',
-    greeting: 'Hello,',
-    bodyFormat: 'summary',
-    includeChart: true,
-    brandingColor: 'oklch(0.65 0.15 340)',
-    footer: 'This is an automated report from The Sovereign Ecosystem.',
-    createdAt: new Date().toISOString()
+  const [newScheduleName, setNewScheduleName] = useState('')
+  const [newScheduleFrequency, setNewScheduleFrequency] = useState<'daily' | 'weekly' | 'monthly'>('weekly')
+  const [newScheduleDayOfWeek, setNewScheduleDayOfWeek] = useState(1)
+  const [newScheduleTime, setNewScheduleTime] = useState('09:00')
+  const [newScheduleRecipients, setNewScheduleRecipients] = useState('')
+  const [newScheduleSubject, setNewScheduleSubject] = useState('Weekly Team Performance Report')
+  const [newScheduleTemplate, setNewScheduleTemplate] = useState('')
+
+  const createSchedule = () => {
+    if (!newScheduleName.trim() || !newScheduleRecipients.trim()) {
+      toast.error('Please enter schedule name and recipients')
+      return
+    }
+
+    const recipientList = newScheduleRecipients.split(',').map(r => r.trim()).filter(r => r)
+
+    const schedule = emailScheduleService.createSchedule({
+      name: newScheduleName,
+      enabled: true,
+      frequency: newScheduleFrequency,
+      dayOfWeek: newScheduleDayOfWeek,
+      time: newScheduleTime,
+      timezone: 'America/New_York',
+      recipients: recipientList,
+      subject: newScheduleSubject,
+      templateId: newScheduleTemplate || 'default',
+      includeCharts: true,
+      format: 'html'
+    })
+
+    setSchedules((current) => [...(current || []), schedule])
+    toast.success(`Email schedule "${newScheduleName}" created`)
+
+    setNewScheduleName('')
+    setNewScheduleRecipients('')
+    setIsCreatingSchedule(false)
   }
 
-  useEffect(() => {
-    if (templates && templates.length === 0) {
-      setTemplates([defaultTemplate])
-    }
-  }, [])
+  const toggleSchedule = (scheduleId: string) => {
+    setSchedules((current) =>
+      (current || []).map(schedule =>
+        schedule.id === scheduleId
+          ? { ...schedule, enabled: !schedule.enabled }
+          : schedule
+      )
+    )
+  }
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      checkAndSendScheduledEmails()
-    }, 60000)
+  const deleteSchedule = (scheduleId: string) => {
+    const schedule = (schedules || []).find(s => s.id === scheduleId)
+    if (!schedule) return
 
-    return () => clearInterval(interval)
-  }, [schedules, templates])
-
-  const checkAndSendScheduledEmails = async () => {
-    if (!schedules) return
-
-    const dueSchedules = emailScheduleService.checkSchedules(schedules)
-
-    for (const schedule of dueSchedules) {
-      await sendScheduledEmail(schedule)
+    if (confirm(`Delete schedule "${schedule.name}"?`)) {
+      setSchedules((current) => (current || []).filter(s => s.id !== scheduleId))
+      toast.success('Schedule deleted')
     }
   }
 
-  const sendScheduledEmail = async (schedule: EmailSchedule) => {
-    const template = templates?.find(t => t.id === schedule.templateId) || defaultTemplate
+  const sendTestEmail = async (scheduleId: string) => {
+    const schedule = (schedules || []).find(s => s.id === scheduleId)
+    if (!schedule) return
 
-    const mockData = {
-      stats: {
-        totalTests: 147,
-        successRate: 94,
-        completedModules: 12,
-        activeTeams: 3
-      },
-      charts: [],
-      highlights: 'Your team has shown excellent progress this period. Keep up the great work!'
-    }
+    const template = (templates || []).find(t => t.id === schedule.templateId) || getDefaultTemplate()
+
+    toast.loading('Sending test email...', { id: 'test-email' })
 
     try {
-      const report = await emailScheduleService.simulateSendEmail(schedule, template, mockData)
+      const mockData = {
+        stats: {
+          totalTests: 234,
+          successRate: 87,
+          completedModules: 18,
+          activeTeams: (teams || []).length || 3
+        },
+        charts: [],
+        highlights: 'Outstanding progress this week! Team performance improved by 12% across all metrics.'
+      }
 
-      toast.success('Report sent successfully', {
-        description: `Sent to ${schedule.recipients.length} recipient(s)`
-      })
-
-      soundManager.play('glassTap')
-
-      const updatedSchedule = emailScheduleService.updateScheduleAfterSend(schedule)
-      setSchedules(prev => 
-        (prev || []).map(s => s.id === schedule.id ? updatedSchedule : s)
-      )
+      await emailScheduleService.simulateSendEmail(schedule, template, mockData)
+      toast.success('Test email sent successfully!', { id: 'test-email' })
     } catch (error) {
-      console.error('Failed to send email:', error)
-      toast.error('Failed to send report')
+      toast.error('Failed to send test email', { id: 'test-email' })
     }
   }
 
-  const createNewSchedule = () => {
-    const newSchedule: Partial<EmailSchedule> = {
-      name: 'New Schedule',
-      enabled: true,
-      frequency: 'weekly',
-      dayOfWeek: 1,
-      time: '09:00',
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      recipients: [],
-      subject: 'Performance Report',
-      templateId: templates?.[0]?.id || 'default',
-      includeCharts: true,
-      format: 'html',
-      chartIds: []
-    }
+  const getDefaultTemplate = (): EmailTemplate => ({
+    id: 'default',
+    name: 'Default Template',
+    subject: 'Team Performance Report',
+    greeting: 'Hello Team,',
+    bodyFormat: 'summary',
+    includeChart: true,
+    brandingColor: '#E088AA',
+    footer: 'This is an automated report from The Sovereign Ecosystem.',
+    createdAt: new Date().toISOString()
+  })
 
-    const schedule = emailScheduleService.createSchedule(newSchedule as any)
-    setSchedules(prev => [...(prev || []), schedule])
-    setEditingSchedule(schedule)
-    setIsCreating(true)
-    soundManager.play('glassTap')
+  const getDayName = (day: number) => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    return days[day] || 'Monday'
   }
 
-  const updateSchedule = (id: string, updates: Partial<EmailSchedule>) => {
-    setSchedules(prev =>
-      (prev || []).map(s => s.id === id ? { ...s, ...updates } : s)
-    )
-  }
-
-  const deleteSchedule = (id: string) => {
-    setSchedules(prev => (prev || []).filter(s => s.id !== id))
-    toast.success('Schedule deleted')
-    soundManager.play('glassTap')
-  }
-
-  const toggleSchedule = (id: string) => {
-    setSchedules(prev =>
-      (prev || []).map(s => 
-        s.id === id ? { ...s, enabled: !s.enabled } : s
-      )
-    )
-    soundManager.play('glassTap')
-  }
-
-  const previewTemplate = (template: EmailTemplate) => {
-    const mockData = {
-      stats: {
-        totalTests: 147,
-        successRate: 94,
-        completedModules: 12,
-        activeTeams: 3
-      },
-      charts: [],
-      highlights: 'This is a preview of your automated report.'
-    }
-
-    const html = emailScheduleService.generateEmailHTML(template, mockData)
-    setPreviewHtml(html)
-  }
-
-  const testSendEmail = async (schedule: EmailSchedule) => {
-    toast.info('Sending test email...')
-    await sendScheduledEmail(schedule)
+  const getNextScheduledDisplay = (schedule: EmailSchedule) => {
+    const next = new Date(schedule.nextScheduled)
+    return next.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    })
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          className="gap-2 bg-card/70 backdrop-blur-xl border-border/40 hover:border-rose-blush/50 dark:hover:border-moonlit-lavender/50 hover:shadow-lg hover:shadow-rose-blush/10 dark:hover:shadow-moonlit-lavender/10 transition-all duration-300"
-        >
-          <Mail className="w-4 h-4" />
-          Email Scheduling
-        </Button>
-      </DialogTrigger>
-
-      <DialogContent className="max-w-4xl max-h-[90vh] bg-card/95 backdrop-blur-3xl border-border/40">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-serif text-rose-blush dark:text-moonlit-lavender flex items-center gap-3">
-            <Mail className="w-6 h-6" />
-            Automated Email Scheduling
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            Configure automated reports to send at regular intervals
-          </DialogDescription>
-        </DialogHeader>
-
-        <Tabs defaultValue="schedules" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="schedules">
-              <Clock className="w-4 h-4 mr-2" />
-              Schedules
-            </TabsTrigger>
-            <TabsTrigger value="templates">
-              <FileText className="w-4 h-4 mr-2" />
-              Templates
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="schedules" className="space-y-4 mt-4">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                {schedules?.length || 0} schedule{schedules?.length !== 1 ? 's' : ''} configured
-              </div>
-              <Button
-                onClick={createNewSchedule}
-                size="sm"
-                className="bg-gradient-to-r from-rose-blush to-rose-gold dark:from-moonlit-lavender dark:to-moonlit-violet text-white"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                New Schedule
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-serif font-semibold text-foreground">Email Scheduler</h2>
+          <p className="text-muted-foreground mt-1">Automate team performance reports via email</p>
+        </div>
+        
+        <div className="flex gap-2">
+          <Dialog open={isCreatingSchedule} onOpenChange={setIsCreatingSchedule}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-5 h-5" />
+                Create Schedule
               </Button>
-            </div>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="font-serif text-2xl">Create Email Schedule</DialogTitle>
+                <DialogDescription>
+                  Set up automated email reports for team performance
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-6 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-name">Schedule Name</Label>
+                  <Input
+                    id="schedule-name"
+                    placeholder="e.g., Weekly Team Report"
+                    value={newScheduleName}
+                    onChange={(e) => setNewScheduleName(e.target.value)}
+                  />
+                </div>
 
-            <ScrollArea className="h-[400px] pr-4">
-              <div className="space-y-3">
-                <AnimatePresence mode="popLayout">
-                  {schedules && schedules.length > 0 ? (
-                    schedules.map((schedule, index) => (
-                      <motion.div
-                        key={schedule.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ delay: index * 0.05 }}
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-subject">Email Subject</Label>
+                  <Input
+                    id="schedule-subject"
+                    placeholder="e.g., Weekly Team Performance Report"
+                    value={newScheduleSubject}
+                    onChange={(e) => setNewScheduleSubject(e.target.value)}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="frequency">Frequency</Label>
+                    <Select
+                      value={newScheduleFrequency}
+                      onValueChange={(value: 'daily' | 'weekly' | 'monthly') => setNewScheduleFrequency(value)}
+                    >
+                      <SelectTrigger id="frequency">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {newScheduleFrequency === 'weekly' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="day-of-week">Day of Week</Label>
+                      <Select
+                        value={newScheduleDayOfWeek.toString()}
+                        onValueChange={(value) => setNewScheduleDayOfWeek(parseInt(value))}
                       >
-                        <Card className="p-4 bg-card/50 backdrop-blur-xl border-border/40">
-                          <div className="flex items-start gap-4">
-                            <div className="flex-1 space-y-3">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <h4 className="font-medium">{schedule.name}</h4>
-                                  <Badge
-                                    variant={schedule.enabled ? 'default' : 'outline'}
-                                    className={schedule.enabled ? 'bg-rose-blush/20 text-rose-blush dark:bg-moonlit-lavender/20 dark:text-moonlit-lavender' : ''}
-                                  >
-                                    {schedule.enabled ? 'Active' : 'Paused'}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => toggleSchedule(schedule.id)}
-                                  >
-                                    {schedule.enabled ? (
-                                      <ToggleRight className="w-4 h-4 text-rose-blush dark:text-moonlit-lavender" />
-                                    ) : (
-                                      <ToggleLeft className="w-4 h-4" />
-                                    )}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => testSendEmail(schedule)}
-                                  >
-                                    <Send className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      setEditingSchedule(schedule)
-                                      setIsCreating(true)
-                                    }}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => deleteSchedule(schedule.id)}
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                  <Calendar className="w-4 h-4" />
-                                  <span className="capitalize">{schedule.frequency}</span>
-                                  {schedule.frequency === 'weekly' && schedule.dayOfWeek !== undefined && (
-                                    <span>
-                                      ({['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][schedule.dayOfWeek]})
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                  <Clock className="w-4 h-4" />
-                                  <span>{schedule.time}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                  <Users className="w-4 h-4" />
-                                  <span>{schedule.recipients.length} recipient{schedule.recipients.length !== 1 ? 's' : ''}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                  <Mail className="w-4 h-4" />
-                                  <span>Next: {new Date(schedule.nextScheduled).toLocaleDateString()}</span>
-                                </div>
-                              </div>
-
-                              {schedule.lastSent && (
-                                <div className="text-xs text-muted-foreground">
-                                  Last sent: {new Date(schedule.lastSent).toLocaleString()}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </Card>
-                      </motion.div>
-                    ))
-                  ) : (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Mail className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>No schedules configured yet</p>
-                      <p className="text-sm mt-2">Create your first automated report schedule</p>
+                        <SelectTrigger id="day-of-week">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">Sunday</SelectItem>
+                          <SelectItem value="1">Monday</SelectItem>
+                          <SelectItem value="2">Tuesday</SelectItem>
+                          <SelectItem value="3">Wednesday</SelectItem>
+                          <SelectItem value="4">Thursday</SelectItem>
+                          <SelectItem value="5">Friday</SelectItem>
+                          <SelectItem value="6">Saturday</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
-                </AnimatePresence>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="time">Time</Label>
+                    <Input
+                      id="time"
+                      type="time"
+                      value={newScheduleTime}
+                      onChange={(e) => setNewScheduleTime(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="recipients">Recipients</Label>
+                  <Textarea
+                    id="recipients"
+                    placeholder="Enter email addresses separated by commas"
+                    value={newScheduleRecipients}
+                    onChange={(e) => setNewScheduleRecipients(e.target.value)}
+                    rows={3}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Separate multiple emails with commas
+                  </p>
+                </div>
+
+                <Button onClick={createSchedule} className="w-full">
+                  <Calendar className="w-5 h-5 mr-2" />
+                  Create Schedule
+                </Button>
               </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="templates" className="space-y-4 mt-4">
-            <div className="text-sm text-muted-foreground mb-4">
-              Customize email templates with your branding
-            </div>
-
-            <ScrollArea className="h-[400px] pr-4">
-              <div className="space-y-3">
-                {templates && templates.map((template) => (
-                  <Card key={template.id} className="p-4 bg-card/50 backdrop-blur-xl border-border/40">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium">{template.name}</h4>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => previewTemplate(template)}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Preview
-                      </Button>
-                    </div>
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <div>Subject: {template.subject}</div>
-                      <div className="flex items-center gap-2">
-                        <Palette className="w-4 h-4" />
-                        <div
-                          className="w-6 h-6 rounded-md border border-border/40"
-                          style={{ backgroundColor: template.brandingColor }}
-                        />
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-        </Tabs>
-
-        {previewHtml && (
-          <Dialog open={!!previewHtml} onOpenChange={() => setPreviewHtml('')}>
-            <DialogContent className="max-w-4xl max-h-[90vh]">
-              <DialogHeader>
-                <DialogTitle>Email Preview</DialogTitle>
-              </DialogHeader>
-              <ScrollArea className="h-[600px]">
-                <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
-              </ScrollArea>
             </DialogContent>
           </Dialog>
-        )}
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+
+      {(schedules || []).length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Clock className="w-16 h-16 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-serif font-semibold mb-2">No Schedules Yet</h3>
+            <p className="text-muted-foreground text-center mb-6">
+              Create your first email schedule to automate team reports
+            </p>
+            <Button onClick={() => setIsCreatingSchedule(true)}>
+              <Plus className="w-5 h-5 mr-2" />
+              Create Schedule
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2">
+          <AnimatePresence mode="popLayout">
+            {(schedules || []).map((schedule) => (
+              <motion.div
+                key={schedule.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                layout
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <Card className={schedule.enabled ? '' : 'opacity-60'}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="font-serif text-xl">{schedule.name}</CardTitle>
+                        <CardDescription className="mt-1">{schedule.subject}</CardDescription>
+                      </div>
+                      <Switch
+                        checked={schedule.enabled}
+                        onCheckedChange={() => toggleSchedule(schedule.id)}
+                      />
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">
+                          {schedule.frequency === 'weekly' && `Every ${getDayName(schedule.dayOfWeek || 1)}`}
+                          {schedule.frequency === 'daily' && 'Every day'}
+                          {schedule.frequency === 'monthly' && 'Every month'}
+                          {' at '}{schedule.time}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">
+                          Next: {getNextScheduledDisplay(schedule)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm">
+                        <Users className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">
+                          {schedule.recipients.length} recipient{schedule.recipients.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
+
+                    {schedule.lastSent && (
+                      <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30">
+                        <CheckCircle className="w-4 h-4 text-green-600" weight="fill" />
+                        <span className="text-sm">
+                          Last sent: {new Date(schedule.lastSent).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => sendTestEmail(schedule.id)}
+                        className="flex-1"
+                      >
+                        <PaperPlaneTilt className="w-4 h-4 mr-2" />
+                        Send Test
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteSchedule(schedule.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {(schedules || []).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif flex items-center gap-2">
+              <EnvelopeSimple className="w-6 h-6 text-primary" />
+              Scheduled Reports Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="p-4 rounded-lg bg-muted/30">
+                <div className="text-3xl font-bold font-serif text-primary">
+                  {(schedules || []).length}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">Total Schedules</div>
+              </div>
+              <div className="p-4 rounded-lg bg-muted/30">
+                <div className="text-3xl font-bold font-serif text-green-600">
+                  {(schedules || []).filter(s => s.enabled).length}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">Active Schedules</div>
+              </div>
+              <div className="p-4 rounded-lg bg-muted/30">
+                <div className="text-3xl font-bold font-serif text-blue-600">
+                  {(schedules || []).reduce((sum, s) => sum + s.recipients.length, 0)}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">Total Recipients</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   )
 }
