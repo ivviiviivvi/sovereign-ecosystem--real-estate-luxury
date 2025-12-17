@@ -12,8 +12,11 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { DownloadSimple, Trophy, TrendUp, TrendDown, Users, Target, Clock, ChartLine } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
-export function TeamComparisonView() {
-  const [teams] = useKV<Team[]>('teams', [])
+interface TeamComparisonViewProps {
+  teams: Team[]
+}
+
+export function TeamComparisonView({ teams }: TeamComparisonViewProps) {
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([])
   const [comparison, setComparison] = useState<TeamComparison | null>(null)
   const [isExporting, setIsExporting] = useState(false)

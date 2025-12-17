@@ -150,11 +150,11 @@ export function TeamPerformanceDashboard({ onBack }: { onBack: () => void }) {
               </TabsContent>
 
               <TabsContent value="comparison" className="space-y-6">
-                <TeamComparisonView />
+                <TeamComparisonView teams={teams || []} />
               </TabsContent>
 
               <TabsContent value="scheduler" className="space-y-6">
-                <EmailScheduler />
+                <EmailScheduler teams={teams || []} />
               </TabsContent>
             </Tabs>
           </CardContent>

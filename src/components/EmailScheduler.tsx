@@ -27,10 +27,13 @@ import {
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
-export function EmailScheduler() {
+interface EmailSchedulerProps {
+  teams: Team[]
+}
+
+export function EmailScheduler({ teams }: EmailSchedulerProps) {
   const [schedules, setSchedules] = useKV<EmailSchedule[]>('email-schedules', [])
   const [templates, setTemplates] = useKV<EmailTemplate[]>('email-templates', [])
-  const [teams] = useKV<Team[]>('teams', [])
   
   const [isCreatingSchedule, setIsCreatingSchedule] = useState(false)
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false)

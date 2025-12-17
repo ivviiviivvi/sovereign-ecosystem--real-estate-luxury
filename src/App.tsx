@@ -18,6 +18,7 @@ import { ThemeToggle } from './components/ThemeToggle'
 import { ParticleBackground } from './components/ParticleBackground'
 import { FloatingElements } from './components/FloatingElements'
 import { OfflineSyncIndicator } from './components/OfflineSyncIndicator'
+import { TeamManagementDashboard } from './components/TeamManagementDashboard'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
 import { Volume2, VolumeX } from 'lucide-react'
 import { soundManager } from './lib/sound-manager'
@@ -171,6 +172,12 @@ function App() {
             >
               Vault
             </TabsTrigger>
+            <TabsTrigger 
+              value="teams" 
+              className="data-[state=active]:text-rose-blush dark:data-[state=active]:text-moonlit-lavender data-[state=active]:bg-rose-blush/10 dark:data-[state=active]:bg-moonlit-lavender/10 rounded-full transition-all duration-300 focus:ring-2 focus:ring-rose-blush/30 dark:focus:ring-moonlit-lavender/30 focus:ring-offset-2 focus:ring-offset-card"
+            >
+              Teams
+            </TabsTrigger>
             <div className="ml-auto flex items-center gap-2 pr-2">
               <PatternAlertNotifications />
             </div>
@@ -212,6 +219,18 @@ function App() {
                 className="container mx-auto"
               >
                 <PrivateVault documents={documents || []} />
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="teams" className="m-0">
+              <motion.div
+                key="teams"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <TeamManagementDashboard />
               </motion.div>
             </TabsContent>
           </AnimatePresence>

@@ -357,11 +357,11 @@ export function TestingDashboard() {
 
               <TestLeaderboard />
               <TeamLeaderboard />
-              <TeamComparisonView />
+              <TeamComparisonView teams={[]} />
               <TestSessionComparison />
               <TestDataExport />
               <AutomatedTestSchedule />
-              <EmailScheduler />
+              <EmailScheduler teams={[]} />
             </div>
           </div>
         </DialogHeader>
