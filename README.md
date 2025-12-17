@@ -148,6 +148,10 @@ A sophisticated, AI-powered luxury real estate platform featuring advanced UI/UX
 
 ## 📚 Documentation
 
+### Interactive Testing Guide
+- **[Interactive Demo Guide](Click "Feature Demo" button in app)** - Step-by-step interactive walkthrough built into the app
+- **[OFFLINE_AR_COLLABORATION_DEMO.md](./OFFLINE_AR_COLLABORATION_DEMO.md)** - Complete testing workflow for offline mode, AR measurements, and live collaboration
+
 ### Getting Started
 - **[QUICK_START_NEW_FEATURES.md](./QUICK_START_NEW_FEATURES.md)** - Quick start guide for the three latest features (Collaboration, Offline Sync, AR Templates)
 - **[FEATURE_DEMO.md](./FEATURE_DEMO.md)** - Visual walkthrough with UI diagrams and complete user flows

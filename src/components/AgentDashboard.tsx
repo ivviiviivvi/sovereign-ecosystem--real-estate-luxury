@@ -3,7 +3,7 @@ import { Property } from '@/lib/types'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
-import { AlertTriangle, Calendar, Shield, TrendingUp, Camera, ArrowLeftRight } from 'lucide-react'
+import { AlertTriangle, Calendar, Shield, TrendingUp, Camera, ArrowLeftRight, BookOpen } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AnimatedPropertyCard } from './AnimatedPropertyCard'
 import { MarketTicker } from './MarketTicker'
@@ -16,6 +16,7 @@ import { PatternAlertNotifications } from './PatternAlertNotifications'
 import { PropertyComparisonSelector, PropertyCardWithSelection } from './PropertyComparisonSelector'
 import { ARPropertyViewer } from './ARPropertyViewer'
 import { PropertyComparisonSlider } from './PropertyComparisonSlider'
+import { FeatureDemoGuide } from './FeatureDemoGuide'
 import { soundManager } from '@/lib/sound-manager'
 
 interface AgentDashboardProps {
@@ -29,6 +30,7 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [arProperty, setArProperty] = useState<Property | null>(null)
   const [comparisonPair, setComparisonPair] = useState<[Property, Property] | null>(null)
+  const [showDemoGuide, setShowDemoGuide] = useState(false)
 
   const toggleProperty = (id: string) => {
     setSelectedIds(prev => {
@@ -60,6 +62,18 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
             <p className="text-muted-foreground text-sm font-light tracking-wide">Compliance Intelligence Dashboard</p>
           </div>
           <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowDemoGuide(true)
+                soundManager.play('glassTap')
+              }}
+              className="gap-2 border-rose-blush/30 dark:border-moonlit-lavender/30 hover:bg-rose-blush/10 dark:hover:bg-moonlit-lavender/10"
+            >
+              <BookOpen className="w-4 h-4" />
+              Feature Demo
+            </Button>
             <PatternAlertNotifications />
             <button
               onClick={onBack}
@@ -213,6 +227,11 @@ export function AgentDashboard({ properties, watchlistProperties, riskProperties
           />
         )}
       </AnimatePresence>
+
+      <FeatureDemoGuide
+        isOpen={showDemoGuide}
+        onClose={() => setShowDemoGuide(false)}
+      />
     </div>
   )
 }

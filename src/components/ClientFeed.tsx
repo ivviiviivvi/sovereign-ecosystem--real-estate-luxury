@@ -7,8 +7,9 @@ import { PropertyComparisonSlider } from './PropertyComparisonSlider'
 import { PropertySelector } from './PropertySelector'
 import { PriceAlerts } from './PriceAlerts'
 import { ComparisonHistoryViewer } from './ComparisonHistoryViewer'
+import { FeatureDemoGuide } from './FeatureDemoGuide'
 import { Button } from './ui/button'
-import { Camera, ArrowLeftRight } from 'lucide-react'
+import { Camera, ArrowLeftRight, BookOpen } from 'lucide-react'
 import { soundManager } from '@/lib/sound-manager'
 
 interface ClientFeedProps {
@@ -22,6 +23,7 @@ export function ClientFeed({ properties, onBack }: ClientFeedProps) {
   const [comparisonPair, setComparisonPair] = useState<[Property, Property] | null>(null)
   const [showARSelector, setShowARSelector] = useState(false)
   const [showComparisonSelector, setShowComparisonSelector] = useState(false)
+  const [showDemoGuide, setShowDemoGuide] = useState(false)
   const y = useMotionValue(0)
 
   const currentProperty = properties[currentIndex]
@@ -76,6 +78,18 @@ export function ClientFeed({ properties, onBack }: ClientFeedProps) {
       <header className="absolute top-0 left-0 right-0 z-50 p-6 flex items-center justify-between bg-gradient-to-b from-card/70 via-card/40 to-transparent backdrop-blur-2xl border-b border-border/20">
         <h1 className="text-2xl font-light text-foreground tracking-wide">Sovereign</h1>
         <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setShowDemoGuide(true)
+              soundManager.play('glassTap')
+            }}
+            className="gap-2 text-muted-foreground hover:text-rose-blush dark:hover:text-moonlit-lavender"
+          >
+            <BookOpen className="w-4 h-4" />
+            <span className="hidden sm:inline">Demo</span>
+          </Button>
           <PriceAlerts properties={properties} />
           <ComparisonHistoryViewer 
             properties={properties} 
@@ -183,6 +197,11 @@ export function ClientFeed({ properties, onBack }: ClientFeedProps) {
           />
         )}
       </AnimatePresence>
+
+      <FeatureDemoGuide
+        isOpen={showDemoGuide}
+        onClose={() => setShowDemoGuide(false)}
+      />
     </div>
   )
 }
