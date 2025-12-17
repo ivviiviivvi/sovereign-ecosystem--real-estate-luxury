@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useKV } from '@github/spark/hooks'
-import { Property, Document, MeasurementPreset } from '@/lib/types'
+import { Property, Document, MeasurementPreset, Measurement as MeasurementType } from '@/lib/types'
 import { 
   X, Camera, RotateCcw, Maximize2, Minimize2, Info, Eye, EyeOff,
   Home, DollarSign, Ruler, MapPin, Sparkles, ZoomIn, ZoomOut, Save, Download,
-  Pencil, Trash2, Check
+  Pencil, Trash2, Check, Plus
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
@@ -17,13 +17,16 @@ import { soundManager } from '@/lib/sound-manager'
 import { toast } from 'sonner'
 import { MeasurementPresets } from './MeasurementPresets'
 import { MeasurementExport } from './MeasurementExport'
+import { MeasurementAnnotations } from './MeasurementAnnotations'
+import { BatchMeasurementExport } from './BatchMeasurementExport'
+import { ContractorWorkspace } from './ContractorWorkspace'
 
 interface MeasurementPoint {
   x: number
   y: number
 }
 
-interface Measurement {
+interface LocalMeasurement {
   id: string
   start: MeasurementPoint
   end: MeasurementPoint
@@ -56,13 +59,15 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
   const [isSaving, setIsSaving] = useState(false)
   
   const [measurementMode, setMeasurementMode] = useState(false)
-  const [measurements, setMeasurements] = useState<Measurement[]>([])
+  const [measurements, setMeasurements] = useState<LocalMeasurement[]>([])
   const [currentMeasurement, setCurrentMeasurement] = useState<{ start: MeasurementPoint } | null>(null)
   const [scaleFactor, setScaleFactor] = useState(1)
   const [editingLabel, setEditingLabel] = useState<string | null>(null)
   const [labelInput, setLabelInput] = useState('')
   const [activePreset, setActivePreset] = useState<MeasurementPreset | null>(null)
   const [currentSnapshotUrl, setCurrentSnapshotUrl] = useState<string | undefined>(undefined)
+  
+  const [persistedMeasurements, setPersistedMeasurements] = useKV<MeasurementType[]>('measurements', [])
   
   const lastTouchDistance = useRef<number>(0)
   const lastTouchAngle = useRef<number>(0)
@@ -370,14 +375,14 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
         Math.pow(y - currentMeasurement.start.y, 2)
       )
 
-      const newMeasurement: Measurement = {
+      const localMeasurement: LocalMeasurement = {
         id: `measurement-${Date.now()}`,
         start: currentMeasurement.start,
         end: { x, y },
         distance: distance / 50
       }
 
-      setMeasurements(prev => [...prev, newMeasurement])
+      setMeasurements(prev => [...prev, localMeasurement])
       setCurrentMeasurement(null)
       soundManager.play('success')
       toast.success('Measurement added', {
@@ -454,14 +459,30 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
           Math.pow(y - currentMeasurement.start.y, 2)
         )
 
-        const newMeasurement: Measurement = {
+        const localMeasurement: LocalMeasurement = {
           id: `measurement-${Date.now()}`,
           start: currentMeasurement.start,
           end: { x, y },
           distance: distance / 50
         }
 
-        setMeasurements(prev => [...prev, newMeasurement])
+        setMeasurements(prev => [...prev, localMeasurement])
+        
+        const persistedMeasurement: MeasurementType = {
+          id: localMeasurement.id,
+          propertyId: property.id,
+          start: { x: currentMeasurement.start.x, y: currentMeasurement.start.y },
+          end: { x, y },
+          distance: distance / 50,
+          label: activePreset?.name,
+          presetId: activePreset?.id,
+          annotations: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+
+        setPersistedMeasurements(prev => [...(prev || []), persistedMeasurement])
+        
         setCurrentMeasurement(null)
         soundManager.play('success')
         toast.success('Measurement added', {
@@ -845,6 +866,14 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
                     <div className="flex items-center justify-between">
                       <h5 className="text-sm font-semibold text-foreground">Measurements</h5>
                       <div className="flex items-center gap-2">
+                        <BatchMeasurementExport
+                          properties={[property]}
+                          measurements={persistedMeasurements || []}
+                        />
+                        <ContractorWorkspace
+                          properties={[property]}
+                          measurements={persistedMeasurements || []}
+                        />
                         <MeasurementExport
                           measurements={measurements}
                           property={property}
@@ -910,17 +939,39 @@ export function ARPropertyViewer({ property, onClose }: ARPropertyViewerProps) {
                             </div>
                             <div className="flex gap-1">
                               {!editingLabel && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setEditingLabel(measurement.id)
-                                    setLabelInput(measurement.label || '')
-                                  }}
-                                  className="h-7 px-2"
-                                >
-                                  <Pencil className="w-3 h-3" />
-                                </Button>
+                                <>
+                                  <MeasurementAnnotations
+                                    measurement={
+                                      (persistedMeasurements || []).find(m => m.id === measurement.id) || {
+                                        id: measurement.id,
+                                        propertyId: property.id,
+                                        start: { x: measurement.start.x, y: measurement.start.y },
+                                        end: { x: measurement.end.x, y: measurement.end.y },
+                                        distance: measurement.distance,
+                                        label: measurement.label,
+                                        annotations: [],
+                                        createdAt: new Date().toISOString(),
+                                        updatedAt: new Date().toISOString()
+                                      }
+                                    }
+                                    onUpdate={(updated) => {
+                                      setPersistedMeasurements(prev =>
+                                        (prev || []).map(m => m.id === updated.id ? updated : m)
+                                      )
+                                    }}
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setEditingLabel(measurement.id)
+                                      setLabelInput(measurement.label || '')
+                                    }}
+                                    className="h-7 px-2"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </Button>
+                                </>
                               )}
                               <Button
                                 variant="ghost"

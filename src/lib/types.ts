@@ -107,3 +107,66 @@ export interface ComparisonHistory {
   title: string
   shareableLink?: string
 }
+
+export interface MeasurementAnnotation {
+  id: string
+  measurementId: string
+  type: 'photo' | 'voice' | 'text'
+  content: string
+  thumbnailUrl?: string
+  duration?: number
+  createdAt: string
+  createdBy?: string
+}
+
+export interface Measurement {
+  id: string
+  propertyId: string
+  start: { x: number; y: number; z?: number }
+  end: { x: number; y: number; z?: number }
+  distance: number
+  label?: string
+  presetId?: string
+  annotations: MeasurementAnnotation[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MeasurementCollection {
+  id: string
+  name: string
+  description?: string
+  propertyIds: string[]
+  measurements: Measurement[]
+  sharedWith: string[]
+  owner: string
+  createdAt: string
+  updatedAt: string
+  tags?: string[]
+}
+
+export interface ContractorProfile {
+  id: string
+  name: string
+  email: string
+  company?: string
+  phone?: string
+  specialty?: string
+  avatarUrl?: string
+  inviteCode: string
+  accessLevel: 'view' | 'comment' | 'edit'
+}
+
+export interface BatchExportJob {
+  id: string
+  name: string
+  properties: string[]
+  measurements: string[]
+  format: 'csv' | 'json' | 'pdf' | 'zip'
+  includeAnnotations: boolean
+  includeSnapshots: boolean
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  downloadUrl?: string
+  createdAt: string
+  completedAt?: string
+}
