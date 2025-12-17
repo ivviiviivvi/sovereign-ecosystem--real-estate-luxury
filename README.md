@@ -146,6 +146,22 @@ A sophisticated, AI-powered luxury real estate platform featuring advanced UI/UX
 - Safari 14+
 - Mobile browsers (iOS Safari, Chrome Mobile)
 
+## 📚 Documentation
+
+### Getting Started
+- **[QUICK_START_NEW_FEATURES.md](./QUICK_START_NEW_FEATURES.md)** - Quick start guide for the three latest features (Collaboration, Offline Sync, AR Templates)
+- **[FEATURE_DEMO.md](./FEATURE_DEMO.md)** - Visual walkthrough with UI diagrams and complete user flows
+
+### Testing & Development
+- **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** - Comprehensive testing guide with 19 detailed test scenarios
+- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - Technical architecture and implementation details
+- **[COLLABORATION_FEATURES.md](./COLLABORATION_FEATURES.md)** - Complete feature documentation and specifications
+
+### Additional Resources
+- **[PRD.md](./PRD.md)** - Product requirements document
+- **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Quick reference guide
+- **[SECURITY.md](./SECURITY.md)** - Security guidelines
+
 ---
 
 Built with attention to detail, accessibility, and user experience.

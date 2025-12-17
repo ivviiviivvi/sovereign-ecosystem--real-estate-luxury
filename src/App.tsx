@@ -17,6 +17,7 @@ import { LanguageDetectionBanner } from './components/LanguageDetectionBanner'
 import { ThemeToggle } from './components/ThemeToggle'
 import { ParticleBackground } from './components/ParticleBackground'
 import { FloatingElements } from './components/FloatingElements'
+import { OfflineSyncIndicator } from './components/OfflineSyncIndicator'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
 import { Volume2, VolumeX } from 'lucide-react'
 import { soundManager } from './lib/sound-manager'
@@ -85,6 +86,7 @@ function App() {
         </motion.div>
         <ThemeToggle />
         <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
+        <OfflineSyncIndicator />
         <LanguageDetectionBanner />
         <Toaster theme="light" position="top-center" />
       </>
@@ -105,6 +107,7 @@ function App() {
         </motion.div>
         <ThemeToggle />
         <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
+        <OfflineSyncIndicator />
         <LanguageDetectionBanner />
         <Toaster theme="light" position="top-center" />
       </>
@@ -130,6 +133,7 @@ function App() {
         </motion.div>
         <ThemeToggle />
         <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
+        <OfflineSyncIndicator />
         <LanguageDetectionBanner />
         <LiveAlertToast />
         <Toaster theme="light" position="top-center" />
@@ -217,6 +221,7 @@ function App() {
       </motion.div>
       <ThemeToggle />
       <SoundToggle enabled={soundEnabled} onToggle={toggleSound} />
+      <OfflineSyncIndicator />
       <LanguageDetectionBanner />
       <LiveAlertToast />
       <Toaster theme="light" position="top-center" />
