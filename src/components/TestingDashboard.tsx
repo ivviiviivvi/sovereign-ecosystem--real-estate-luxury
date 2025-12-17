@@ -17,6 +17,7 @@ import { ScrollArea } from './ui/scroll-area'
 import { VoiceGuidedARTutorial } from './VoiceGuidedARTutorial'
 import { CollaborationTestRunner } from './CollaborationTestRunner'
 import { ARTutorialVideo } from './ARTutorialVideo'
+import { TestCompletionCertificate } from './TestCompletionCertificate'
 import { soundManager } from '@/lib/sound-manager'
 import { toast } from 'sonner'
 import { useKV } from '@github/spark/hooks'
@@ -35,6 +36,7 @@ interface TestingModule {
 
 interface TestSession {
   startTime: string
+  endTime?: string
   completedModules: string[]
   audioEnabled: boolean
   notes: string[]
@@ -121,15 +123,31 @@ export function TestingDashboard() {
         audioEnabled: true,
         notes: []
       }
+      const newCompletedModules = [...(current.completedModules || []), moduleId].filter((v, i, a) => a.indexOf(v) === i)
+      
+      const isAllComplete = newCompletedModules.length === modules.length
+      
       return {
         ...current,
-        completedModules: [...(current.completedModules || []), moduleId].filter((v, i, a) => a.indexOf(v) === i)
+        completedModules: newCompletedModules,
+        endTime: isAllComplete ? new Date().toISOString() : current.endTime
       }
     })
     soundManager.play('success')
     toast.success('Module completed!', {
       description: `You've finished the ${modules.find(m => m.id === moduleId)?.title}`
     })
+    
+    const isAllComplete = ((testSession?.completedModules?.length || 0) + 1) === modules.length
+    if (isAllComplete) {
+      setTimeout(() => {
+        soundManager.play('success')
+        toast.success('All modules completed!', {
+          description: 'Download your completion certificate now',
+          duration: 5000
+        })
+      }, 500)
+    }
   }
 
   const handleStartSession = () => {
@@ -314,16 +332,29 @@ export function TestingDashboard() {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-4 p-4 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-3"
+                  className="mt-4 space-y-3"
                 >
-                  <Trophy className="w-6 h-6 text-green-600 dark:text-green-400" />
-                  <div>
-                    <h4 className="font-semibold text-green-600 dark:text-green-400">
-                      Testing Complete!
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      All modules tested successfully. Ready for production use.
-                    </p>
+                  <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <Trophy className="w-6 h-6 text-green-600 dark:text-green-400" />
+                      <div>
+                        <h4 className="font-semibold text-green-600 dark:text-green-400">
+                          Testing Complete!
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          All modules tested successfully. Ready for production use.
+                        </p>
+                      </div>
+                    </div>
+                    {testSession && testSession.endTime && (
+                      <TestCompletionCertificate
+                        session={{
+                          ...testSession,
+                          endTime: testSession.endTime
+                        }}
+                        modules={modules}
+                      />
+                    )}
                   </div>
                 </motion.div>
               )}

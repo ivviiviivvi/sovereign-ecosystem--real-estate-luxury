@@ -52,32 +52,144 @@ const tutorialSteps: TutorialStep[] = [
     timestamp: 60
   },
   {
+    id: 'room-width',
+    title: 'Scenario 1: Room Width',
+    description: 'Measure wall-to-wall distance in living room using corner points',
+    duration: 25,
+    timestamp: 90
+  },
+  {
+    id: 'ceiling-height',
+    title: 'Scenario 2: Ceiling Height',
+    description: 'Measure floor-to-ceiling height for accurate room volume calculations',
+    duration: 25,
+    timestamp: 115
+  },
+  {
+    id: 'door-frame',
+    title: 'Scenario 3: Door Frame Dimensions',
+    description: 'Measure door width and height for furniture placement planning',
+    duration: 30,
+    timestamp: 140
+  },
+  {
+    id: 'window-size',
+    title: 'Scenario 4: Window Measurements',
+    description: 'Measure window dimensions for curtain and blind installation',
+    duration: 28,
+    timestamp: 170
+  },
+  {
+    id: 'cabinet-space',
+    title: 'Scenario 5: Cabinet & Storage',
+    description: 'Measure kitchen cabinet dimensions and storage space availability',
+    duration: 32,
+    timestamp: 198
+  },
+  {
+    id: 'diagonal-distance',
+    title: 'Scenario 6: Diagonal Measurements',
+    description: 'Measure diagonal distances for TV mounting and furniture placement',
+    duration: 28,
+    timestamp: 230
+  },
+  {
+    id: 'bathroom-fixtures',
+    title: 'Scenario 7: Bathroom Fixtures',
+    description: 'Measure spacing between sink, toilet, and shower for renovation planning',
+    duration: 35,
+    timestamp: 258
+  },
+  {
+    id: 'countertop-length',
+    title: 'Scenario 8: Countertop Measurements',
+    description: 'Measure countertop length and depth for material ordering',
+    duration: 30,
+    timestamp: 293
+  },
+  {
+    id: 'staircase',
+    title: 'Scenario 9: Staircase Dimensions',
+    description: 'Measure stair tread depth, riser height, and total run for code compliance',
+    duration: 38,
+    timestamp: 323
+  },
+  {
+    id: 'closet-space',
+    title: 'Scenario 10: Closet Organization',
+    description: 'Measure closet interior for custom shelving and organization systems',
+    duration: 30,
+    timestamp: 361
+  },
+  {
+    id: 'wall-features',
+    title: 'Scenario 11: Wall Features',
+    description: 'Measure wall alcoves, niches, and built-in features for custom fit furniture',
+    duration: 32,
+    timestamp: 391
+  },
+  {
+    id: 'outdoor-patio',
+    title: 'Scenario 12: Outdoor Spaces',
+    description: 'Measure patio, deck, or balcony dimensions for outdoor furniture planning',
+    duration: 35,
+    timestamp: 423
+  },
+  {
     id: 'room-templates',
     title: 'Apply Room Templates',
     description: 'Use spatial recognition to auto-detect room types and dimensions',
     duration: 25,
-    timestamp: 90
+    timestamp: 458
+  },
+  {
+    id: 'presets-usage',
+    title: 'Using Measurement Presets',
+    description: 'Apply common presets like "Door Height" or "Room Width" for faster workflow',
+    duration: 28,
+    timestamp: 483
   },
   {
     id: 'annotations',
     title: 'Add Photos & Voice Notes',
     description: 'Document measurements with photos, voice recordings, and text notes',
     duration: 35,
-    timestamp: 115
+    timestamp: 511
+  },
+  {
+    id: 'batch-measurements',
+    title: 'Batch Measurements',
+    description: 'Take multiple measurements in one session for complete room documentation',
+    duration: 32,
+    timestamp: 546
   },
   {
     id: 'collection',
     title: 'Create Contractor Collection',
     description: 'Organize measurements into collections for contractor sharing',
     duration: 30,
-    timestamp: 150
+    timestamp: 578
+  },
+  {
+    id: 'export-options',
+    title: 'Export & Share Options',
+    description: 'Export measurements as PDF, CSV, or share directly with contractors',
+    duration: 28,
+    timestamp: 608
   },
   {
     id: 'sync',
     title: 'Automatic Sync',
     description: 'Reconnect to internet and watch measurements automatically sync',
     duration: 20,
-    timestamp: 180
+    timestamp: 636
+  },
+  {
+    id: 'best-practices',
+    title: 'Best Practices & Tips',
+    description: 'Learn pro tips for accurate measurements and efficient field workflows',
+    duration: 25,
+    timestamp: 656
   }
 ]
 
@@ -87,7 +199,7 @@ export function ARTutorialVideo() {
   const [isMuted, setIsMuted] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(200)
+  const [duration, setDuration] = useState(681)
   const [volume, setVolume] = useState(0.8)
   const [playbackRate, setPlaybackRate] = useState(1)
   const [completedSteps, setCompletedSteps] = useState<string[]>([])

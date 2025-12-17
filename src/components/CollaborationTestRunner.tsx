@@ -18,6 +18,7 @@ import { toast } from 'sonner'
 import { collaborationService } from '@/lib/collaboration-service'
 import { offlineSyncService } from '@/lib/offline-sync-service'
 import { Property, Measurement, ContractorProfile, MeasurementCollection } from '@/lib/types'
+import { TestFailureNotifications, TestFailure } from './TestFailureNotifications'
 
 interface TestCase {
   id: string
@@ -56,6 +57,8 @@ export function CollaborationTestRunner() {
   const [testResults, setTestResults] = useState<Map<string, TestResult>>(new Map())
   const [testReports, setTestReports] = useKV<TestReport[]>('test-reports', [])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [testFailures, setTestFailures] = useState<TestFailure[]>([])
+  const [retryAttempts, setRetryAttempts] = useState<Map<string, number>>(new Map())
 
   const testCases: TestCase[] = [
     {
@@ -371,9 +374,59 @@ export function CollaborationTestRunner() {
     ? testCases 
     : testCases.filter(t => t.category === selectedCategory)
 
+  const runSingleTest = async (test: TestCase, retryCount: number = 0): Promise<TestResult> => {
+    try {
+      const result = await test.testFunction()
+      
+      if (!result.success && retryCount < 3) {
+        const failure: TestFailure = {
+          id: `failure-${test.id}-${Date.now()}`,
+          testId: test.id,
+          testName: test.name,
+          category: test.category,
+          errorMessage: result.message,
+          timestamp: new Date().toISOString(),
+          retryCount,
+          maxRetries: 3,
+          details: result.details
+        }
+        
+        setTestFailures(prev => [...prev, failure])
+      }
+      
+      return result
+    } catch (error) {
+      const errorResult: TestResult = {
+        success: false,
+        message: error instanceof Error ? error.message : 'Test execution failed',
+        duration: 0
+      }
+      
+      if (retryCount < 3) {
+        const failure: TestFailure = {
+          id: `failure-${test.id}-${Date.now()}`,
+          testId: test.id,
+          testName: test.name,
+          category: test.category,
+          errorMessage: errorResult.message,
+          timestamp: new Date().toISOString(),
+          retryCount,
+          maxRetries: 3,
+          stackTrace: error instanceof Error ? error.stack : undefined
+        }
+        
+        setTestFailures(prev => [...prev, failure])
+      }
+      
+      return errorResult
+    }
+  }
+
   const runTests = async () => {
     setIsRunning(true)
     setTestResults(new Map())
+    setTestFailures([])
+    setRetryAttempts(new Map())
     setCurrentTestIndex(0)
     soundManager.play('glassTap')
     toast.info('Starting test suite...', { description: `Running ${filteredTests.length} tests` })
@@ -385,27 +438,17 @@ export function CollaborationTestRunner() {
       setCurrentTestIndex(i)
       const test = filteredTests[i]
       
-      try {
-        const result = await test.testFunction()
-        results.set(test.id, result)
-        setTestResults(new Map(results))
-        
-        if (result.success) {
-          soundManager.play('success')
-        } else {
-          soundManager.play('glassTap')
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 500))
-      } catch (error) {
-        const errorResult: TestResult = {
-          success: false,
-          message: error instanceof Error ? error.message : 'Test execution failed',
-          duration: 0
-        }
-        results.set(test.id, errorResult)
-        setTestResults(new Map(results))
+      const result = await runSingleTest(test, 0)
+      results.set(test.id, result)
+      setTestResults(new Map(results))
+      
+      if (result.success) {
+        soundManager.play('success')
+      } else {
+        soundManager.play('glassTap')
       }
+      
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
 
     const totalDuration = Date.now() - startTime
@@ -435,9 +478,42 @@ export function CollaborationTestRunner() {
       })
     } else {
       toast.error(`${failed} test(s) failed`, { 
-        description: `${passed} passed, ${failed} failed` 
+        description: `${passed} passed, ${failed} failed. Auto-retry will begin shortly.` 
       })
     }
+  }
+
+  const handleRetryFailure = async (failure: TestFailure) => {
+    const test = testCases.find(t => t.id === failure.testId)
+    if (!test) return
+
+    const currentRetries = retryAttempts.get(failure.testId) || 0
+    setRetryAttempts(prev => new Map(prev).set(failure.testId, currentRetries + 1))
+
+    const result = await runSingleTest(test, failure.retryCount + 1)
+    
+    setTestResults(prev => {
+      const newMap = new Map(prev)
+      newMap.set(test.id, result)
+      return newMap
+    })
+
+    if (result.success) {
+      setTestFailures(prev => prev.filter(f => f.id !== failure.id))
+    }
+  }
+
+  const handleRetryAllFailures = async () => {
+    const currentFailures = [...testFailures]
+    
+    for (const failure of currentFailures) {
+      await handleRetryFailure(failure)
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
+  }
+
+  const handleDismissFailure = (failureId: string) => {
+    setTestFailures(prev => prev.filter(f => f.id !== failureId))
   }
 
   const exportReport = (report: TestReport) => {
@@ -482,19 +558,20 @@ ${report.results.map(r => `${r.result.success ? '✓' : '✗'} ${r.testName}`).j
   const stats = getResultStats()
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="default"
-          className="gap-2 bg-gradient-to-r from-rose-blush to-rose-gold dark:from-moonlit-violet dark:to-moonlit-lavender"
-          onClick={() => soundManager.play('glassTap')}
-        >
-          <FileText className="w-4 h-4" />
-          Test Suite
-        </Button>
-      </DialogTrigger>
+    <>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+          <Button
+            variant="default"
+            className="gap-2 bg-gradient-to-r from-rose-blush to-rose-gold dark:from-moonlit-violet dark:to-moonlit-lavender"
+            onClick={() => soundManager.play('glassTap')}
+          >
+            <FileText className="w-4 h-4" />
+            Test Suite
+          </Button>
+        </DialogTrigger>
 
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col bg-card/95 backdrop-blur-2xl">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col bg-card/95 backdrop-blur-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-serif flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-blush to-rose-gold dark:from-moonlit-violet dark:to-moonlit-lavender flex items-center justify-center">
@@ -749,5 +826,17 @@ ${report.results.map(r => `${r.result.success ? '✓' : '✗'} ${r.testName}`).j
         </Tabs>
       </DialogContent>
     </Dialog>
+
+    {isOpen && (
+      <TestFailureNotifications
+        failures={testFailures}
+        onRetry={handleRetryFailure}
+        onDismiss={handleDismissFailure}
+        onRetryAll={handleRetryAllFailures}
+        autoRetryEnabled={true}
+        autoRetryDelay={3000}
+      />
+    )}
+  </>
   )
 }
