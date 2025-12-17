@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { Users, Trophy, Target, TrendingUp, Crown, Medal, Award, Star, Calendar, Filter } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Users, Trophy, Target, TrendingUp, Crown, Medal, Award, Star, Calendar, Filter, Mail, Settings, LineChart, Download, Copy, User, UserX } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
@@ -9,6 +9,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
 import { ScrollArea } from './ui/scroll-area'
 import { Avatar } from './ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { Checkbox } from './ui/checkbox'
+import { Separator } from './ui/separator'
 import { useKV } from '@github/spark/hooks'
 import { soundManager } from '@/lib/sound-manager'
 import { toast } from 'sonner'
@@ -52,12 +56,31 @@ interface TeamStats {
   fastestMember: string
 }
 
+interface EmailTemplate {
+  id: string
+  name: string
+  subject: string
+  greeting: string
+  bodyFormat: 'summary' | 'detailed' | 'chart'
+  includeChart: boolean
+  brandingColor: string
+  logo?: string
+  footer: string
+  recipients: string[]
+  schedule: 'daily' | 'weekly' | 'monthly' | 'manual'
+  createdAt: string
+}
+
 export function TeamLeaderboard() {
   const [isOpen, setIsOpen] = useState(false)
   const [testSessions] = useKV<TestSession[]>('test-sessions-history', [])
+  const [emailTemplates, setEmailTemplates] = useKV<EmailTemplate[]>('email-templates', [])
   const [selectedTeam, setSelectedTeam] = useState<string>('all')
   const [timeRange, setTimeRange] = useState<'all' | 'week' | 'month'>('all')
-  const [viewType, setViewType] = useState<'individual' | 'team'>('individual')
+  const [viewType, setViewType] = useState<'individual' | 'team' | 'charts'>('individual')
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([])
+  const [showEmailDialog, setShowEmailDialog] = useState(false)
+  const [showChartView, setShowChartView] = useState(false)
 
   const teams = useMemo(() => {
     if (!testSessions) return []
@@ -91,12 +114,34 @@ export function TeamLeaderboard() {
     return filtered
   }, [testSessions, selectedTeam, timeRange])
 
+  const uniqueMembers = useMemo(() => {
+    if (!testSessions) return []
+    const memberSet = new Set<string>()
+    testSessions.forEach(session => {
+      if (session.userName) memberSet.add(session.userName)
+    })
+    return Array.from(memberSet).sort()
+  }, [testSessions])
+
+  const toggleMemberSelection = (member: string) => {
+    setSelectedMembers(prev => 
+      prev.includes(member) 
+        ? prev.filter(m => m !== member)
+        : [...prev, member]
+    )
+  }
+
   const teamMembers = useMemo((): TeamMember[] => {
     if (!filteredSessions || filteredSessions.length === 0) return []
 
+    let sessions = filteredSessions
+    if (selectedMembers.length > 0) {
+      sessions = sessions.filter(s => selectedMembers.includes(s.userName || 'Anonymous'))
+    }
+
     const userMap = new Map<string, TeamMember>()
 
-    filteredSessions.forEach(session => {
+    sessions.forEach(session => {
       const userName = session.userName || 'Anonymous'
       const key = `${userName}-${session.teamId || 'default'}`
       
@@ -153,7 +198,7 @@ export function TeamLeaderboard() {
     })
 
     return sortedEntries
-  }, [filteredSessions])
+  }, [filteredSessions, selectedMembers])
 
   const teamStats = useMemo((): Map<string, TeamStats> => {
     const statsMap = new Map<string, TeamStats>()
@@ -291,7 +336,7 @@ export function TeamLeaderboard() {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-4 flex-wrap">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-muted-foreground" />
             <Select value={selectedTeam} onValueChange={setSelectedTeam}>
@@ -320,11 +365,85 @@ export function TeamLeaderboard() {
             </SelectContent>
           </Select>
 
-          <div className="ml-auto">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <User className="w-4 h-4" />
+                Filter Members ({selectedMembers.length})
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5 text-rose-blush dark:text-moonlit-lavender" />
+                  Filter by Team Members
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    {selectedMembers.length === 0 ? 'All members shown' : `${selectedMembers.length} member${selectedMembers.length !== 1 ? 's' : ''} selected`}
+                  </p>
+                  {selectedMembers.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedMembers([])}
+                      className="gap-1 text-xs"
+                    >
+                      <UserX className="w-3 h-3" />
+                      Clear All
+                    </Button>
+                  )}
+                </div>
+                <Separator />
+                <ScrollArea className="h-[300px] pr-4">
+                  <div className="space-y-2">
+                    {uniqueMembers.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        No team members found
+                      </p>
+                    ) : (
+                      uniqueMembers.map(member => (
+                        <div key={member} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                          <Checkbox
+                            id={`member-${member}`}
+                            checked={selectedMembers.includes(member)}
+                            onCheckedChange={() => toggleMemberSelection(member)}
+                          />
+                          <Label htmlFor={`member-${member}`} className="flex-1 cursor-pointer flex items-center gap-2">
+                            <Avatar className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
+                              {member.charAt(0).toUpperCase()}
+                            </Avatar>
+                            <span className="text-sm">{member}</span>
+                          </Label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <div className="flex items-center gap-2 ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => setShowEmailDialog(true)}
+            >
+              <Mail className="w-4 h-4" />
+              Email Reports
+            </Button>
+            
             <Tabs value={viewType} onValueChange={(v) => setViewType(v as any)}>
               <TabsList>
                 <TabsTrigger value="individual">Individual</TabsTrigger>
                 <TabsTrigger value="team">Team Stats</TabsTrigger>
+                <TabsTrigger value="charts">
+                  <LineChart className="w-4 h-4" />
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -431,7 +550,7 @@ export function TeamLeaderboard() {
               </div>
             )}
           </ScrollArea>
-        ) : (
+        ) : viewType === 'team' ? (
           <ScrollArea className="flex-1 pr-4">
             {Array.from(teamStats.entries()).length === 0 ? (
               <Card className="p-12 bg-muted/30">
@@ -512,8 +631,495 @@ export function TeamLeaderboard() {
               </div>
             )}
           </ScrollArea>
+        ) : (
+          <PerformanceTrendsChart members={teamMembers} timeRange={timeRange} />
         )}
+      </DialogContent>
+
+      <EmailReportDialog
+        isOpen={showEmailDialog}
+        onClose={() => setShowEmailDialog(false)}
+        teamMembers={teamMembers}
+        teamStats={teamStats}
+        emailTemplates={emailTemplates || []}
+        setEmailTemplates={setEmailTemplates}
+      />
+    </Dialog>
+  )
+}
+
+function PerformanceTrendsChart({ members, timeRange }: { members: TeamMember[], timeRange: string }) {
+  if (members.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Card className="p-12 bg-muted/30">
+          <div className="text-center">
+            <LineChart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+            <h3 className="font-semibold text-foreground mb-2">No trend data available</h3>
+            <p className="text-sm text-muted-foreground">
+              Complete multiple test sessions to see performance trends
+            </p>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <ScrollArea className="flex-1 pr-4">
+      <div className="space-y-6">
+        <Card className="p-6 bg-gradient-to-br from-card to-card/50">
+          <h3 className="text-lg font-serif font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-rose-blush dark:text-moonlit-lavender" />
+            Performance Trends Over Time
+          </h3>
+          <div className="space-y-6">
+            {members.map((member, idx) => {
+              const sortedSessions = [...member.sessions].sort((a, b) => 
+                new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+              )
+
+              return (
+                <motion.div
+                  key={member.userName}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="space-y-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                      {member.userName.charAt(0).toUpperCase()}
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="font-semibold text-foreground">{member.userName}</div>
+                      <div className="text-xs text-muted-foreground">{sortedSessions.length} sessions tracked</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="p-4 bg-muted/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-muted-foreground">Completion Time</span>
+                        <Target className="w-4 h-4 text-blue-500" />
+                      </div>
+                      <div className="space-y-1">
+                        {sortedSessions.map((session, i) => {
+                          const prevDuration = i > 0 ? sortedSessions[i - 1].duration : session.duration
+                          const improvement = prevDuration > session.duration
+                          return (
+                            <div key={i} className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Session {i + 1}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="font-semibold">{(session.duration / 1000).toFixed(1)}s</span>
+                                {i > 0 && (
+                                  <TrendingUp className={`w-3 h-3 ${improvement ? 'text-green-500 rotate-180' : 'text-red-500'}`} />
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </Card>
+
+                    <Card className="p-4 bg-muted/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-muted-foreground">Accuracy Rate</span>
+                        <Trophy className="w-4 h-4 text-purple-500" />
+                      </div>
+                      <div className="space-y-1">
+                        {sortedSessions.map((session, i) => {
+                          const accuracy = session.totalTests ? ((session.passedTests || 0) / session.totalTests) * 100 : 0
+                          const prevAccuracy = i > 0 ? ((sortedSessions[i - 1].passedTests || 0) / (sortedSessions[i - 1].totalTests || 1)) * 100 : accuracy
+                          const improvement = accuracy > prevAccuracy
+                          return (
+                            <div key={i} className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Session {i + 1}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="font-semibold">{accuracy.toFixed(0)}%</span>
+                                {i > 0 && (
+                                  <TrendingUp className={`w-3 h-3 ${improvement ? 'text-green-500' : 'text-red-500 rotate-180'}`} />
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </Card>
+
+                    <Card className="p-4 bg-muted/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-muted-foreground">Modules Completed</span>
+                        <Star className="w-4 h-4 text-yellow-500" />
+                      </div>
+                      <div className="space-y-1">
+                        {sortedSessions.map((session, i) => {
+                          const modules = session.completedModules.length
+                          const prevModules = i > 0 ? sortedSessions[i - 1].completedModules.length : modules
+                          const improvement = modules > prevModules
+                          return (
+                            <div key={i} className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Session {i + 1}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="font-semibold">{modules}</span>
+                                {i > 0 && (
+                                  <TrendingUp className={`w-3 h-3 ${improvement ? 'text-green-500' : 'text-red-500 rotate-180'}`} />
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </Card>
+                  </div>
+
+                  {idx < members.length - 1 && <Separator className="my-4" />}
+                </motion.div>
+              )
+            })}
+          </div>
+        </Card>
+      </div>
+    </ScrollArea>
+  )
+}
+
+function EmailReportDialog({ 
+  isOpen, 
+  onClose, 
+  teamMembers, 
+  teamStats,
+  emailTemplates,
+  setEmailTemplates
+}: { 
+  isOpen: boolean
+  onClose: () => void
+  teamMembers: TeamMember[]
+  teamStats: Map<string, TeamStats>
+  emailTemplates: EmailTemplate[]
+  setEmailTemplates: (templates: EmailTemplate[] | ((prev: EmailTemplate[]) => EmailTemplate[])) => void
+}) {
+  const [templateName, setTemplateName] = useState('')
+  const [subject, setSubject] = useState('Team Performance Report')
+  const [greeting, setGreeting] = useState('Hello Team,')
+  const [bodyFormat, setBodyFormat] = useState<'summary' | 'detailed' | 'chart'>('summary')
+  const [includeChart, setIncludeChart] = useState(true)
+  const [brandingColor, setBrandingColor] = useState('#E088AA')
+  const [footer, setFooter] = useState('Best regards,\nYour Testing Team')
+  const [recipients, setRecipients] = useState<string>('')
+  const [schedule, setSchedule] = useState<'daily' | 'weekly' | 'monthly' | 'manual'>('manual')
+
+  const createTemplate = () => {
+    if (!templateName.trim()) {
+      toast.error('Please enter a template name')
+      return
+    }
+
+    const newTemplate: EmailTemplate = {
+      id: Date.now().toString(),
+      name: templateName,
+      subject,
+      greeting,
+      bodyFormat,
+      includeChart,
+      brandingColor,
+      footer,
+      recipients: recipients.split(',').map(r => r.trim()).filter(Boolean),
+      schedule,
+      createdAt: new Date().toISOString()
+    }
+
+    setEmailTemplates(prev => [...prev, newTemplate])
+    soundManager.play('glassTap')
+    toast.success('Email template created', { 
+      description: `${templateName} will be sent ${schedule === 'manual' ? 'manually' : schedule}` 
+    })
+    
+    setTemplateName('')
+    setRecipients('')
+  }
+
+  const deleteTemplate = (id: string) => {
+    setEmailTemplates(prev => prev.filter(t => t.id !== id))
+    soundManager.play('glassTap')
+    toast.success('Template deleted')
+  }
+
+  const previewEmail = () => {
+    const totalSessions = teamMembers.reduce((sum, m) => sum + m.sessions.length, 0)
+    const avgAccuracy = teamMembers.reduce((sum, m) => sum + m.successRate, 0) / teamMembers.length
+    
+    const preview = `
+${greeting}
+
+${bodyFormat === 'summary' ? `Here's a summary of team performance:
+- Total team members: ${teamMembers.length}
+- Total sessions completed: ${totalSessions}
+- Average accuracy: ${avgAccuracy.toFixed(1)}%
+- Top performer: ${teamMembers[0]?.userName || 'N/A'}` : ''}
+
+${bodyFormat === 'detailed' ? teamMembers.map((m, i) => `
+${i + 1}. ${m.userName}
+   - Sessions: ${m.sessions.length}
+   - Accuracy: ${m.successRate.toFixed(1)}%
+   - Fastest: ${(m.fastestCompletion / 1000).toFixed(1)}s
+   - Modules: ${m.totalModulesCompleted}`).join('\n') : ''}
+
+${includeChart ? '\n[Performance trend chart would be included here]' : ''}
+
+${footer}
+    `.trim()
+
+    return preview
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-serif flex items-center gap-2">
+            <Mail className="w-6 h-6 text-rose-blush dark:text-moonlit-lavender" />
+            Email Report Templates
+          </DialogTitle>
+        </DialogHeader>
+
+        <Tabs defaultValue="create" className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="create">Create Template</TabsTrigger>
+            <TabsTrigger value="manage">Manage Templates ({emailTemplates.length})</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="create" className="flex-1 overflow-auto">
+            <div className="grid grid-cols-2 gap-6">
+              <ScrollArea className="pr-4">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="template-name">Template Name</Label>
+                    <Input
+                      id="template-name"
+                      value={templateName}
+                      onChange={(e) => setTemplateName(e.target.value)}
+                      placeholder="Weekly Team Report"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="subject">Email Subject</Label>
+                    <Input
+                      id="subject"
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="greeting">Greeting</Label>
+                    <Input
+                      id="greeting"
+                      value={greeting}
+                      onChange={(e) => setGreeting(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Body Format</Label>
+                    <Select value={bodyFormat} onValueChange={(v) => setBodyFormat(v as any)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="summary">Summary</SelectItem>
+                        <SelectItem value="detailed">Detailed</SelectItem>
+                        <SelectItem value="chart">Chart Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="include-chart"
+                      checked={includeChart}
+                      onCheckedChange={(checked) => setIncludeChart(checked as boolean)}
+                    />
+                    <Label htmlFor="include-chart" className="cursor-pointer">
+                      Include performance trend chart
+                    </Label>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="branding-color">Brand Color</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        id="branding-color"
+                        type="color"
+                        value={brandingColor}
+                        onChange={(e) => setBrandingColor(e.target.value)}
+                        className="w-20 h-10"
+                      />
+                      <Input
+                        value={brandingColor}
+                        onChange={(e) => setBrandingColor(e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="footer">Footer</Label>
+                    <Input
+                      id="footer"
+                      value={footer}
+                      onChange={(e) => setFooter(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="recipients">Recipients (comma-separated)</Label>
+                    <Input
+                      id="recipients"
+                      value={recipients}
+                      onChange={(e) => setRecipients(e.target.value)}
+                      placeholder="email1@example.com, email2@example.com"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Schedule</Label>
+                    <Select value={schedule} onValueChange={(v) => setSchedule(v as any)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="manual">Send Manually</SelectItem>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button onClick={createTemplate} className="w-full">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Create Template
+                  </Button>
+                </div>
+              </ScrollArea>
+
+              <div className="border rounded-lg p-4 bg-muted/30">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-sm">Email Preview</h4>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(previewEmail())
+                      toast.success('Preview copied to clipboard')
+                    }}
+                  >
+                    <Copy className="w-3 h-3" />
+                  </Button>
+                </div>
+                <div 
+                  className="p-4 bg-card rounded border border-border"
+                  style={{ borderTopColor: brandingColor, borderTopWidth: '4px' }}
+                >
+                  <div className="text-sm font-semibold mb-2" style={{ color: brandingColor }}>
+                    {subject}
+                  </div>
+                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans">
+                    {previewEmail()}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="manage" className="flex-1 overflow-auto">
+            <ScrollArea className="h-[500px] pr-4">
+              {emailTemplates.length === 0 ? (
+                <Card className="p-12 bg-muted/30">
+                  <div className="text-center">
+                    <Mail className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="font-semibold text-foreground mb-2">No templates yet</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Create your first email template to get started
+                    </p>
+                  </div>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {emailTemplates.map((template, index) => (
+                    <motion.div
+                      key={template.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <Card className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-semibold">{template.name}</h4>
+                              <Badge
+                                variant="outline"
+                                className="text-xs"
+                                style={{ borderColor: template.brandingColor, color: template.brandingColor }}
+                              >
+                                {template.schedule}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">{template.subject}</p>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span>Format: {template.bodyFormat}</span>
+                              <span>•</span>
+                              <span>{template.recipients.length} recipient{template.recipients.length !== 1 ? 's' : ''}</span>
+                              {template.includeChart && (
+                                <>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1">
+                                    <LineChart className="w-3 h-3" />
+                                    Chart included
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                toast.success('Email sent', { description: `Sent to ${template.recipients.length} recipients` })
+                                soundManager.play('glassTap')
+                              }}
+                            >
+                              <Mail className="w-3 h-3 mr-1" />
+                              Send
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteTemplate(template.id)}
+                            >
+                              <Download className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   )
 }
+
