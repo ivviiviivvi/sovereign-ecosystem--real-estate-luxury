@@ -15,12 +15,18 @@ import {
   Calendar,
   Download,
   ArrowLeft,
-  Sparkles
+  Sparkles,
+  Pencil,
+  Trophy,
+  Plug
 } from 'lucide-react'
 import { Team, teamPerformanceService } from '../lib/team-performance-service'
 import { TeamCreation } from './TeamCreation'
 import { TeamComparisonView } from './TeamComparisonView'
 import { EmailScheduler } from './EmailScheduler'
+import { TeamEditor } from './TeamEditor'
+import { IndustryBenchmarks } from './IndustryBenchmarks'
+import { MessagingIntegrations } from './MessagingIntegrations'
 import { toast } from 'sonner'
 
 export function TeamManagementDashboard() {
@@ -128,13 +134,17 @@ export function TeamManagementDashboard() {
               Track, compare, and optimize team performance
             </p>
           </div>
-          <Button
-            onClick={() => setShowCreation(true)}
-            className="bg-gradient-to-r from-rose-blush to-lavender-mist hover:shadow-xl dark:from-moonlit-violet dark:to-moonlit-lavender text-white"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            New Team
-          </Button>
+          <div className="flex items-center gap-3">
+            <IndustryBenchmarks teams={teams} />
+            <MessagingIntegrations teams={teams} />
+            <Button
+              onClick={() => setShowCreation(true)}
+              className="bg-gradient-to-r from-rose-blush to-lavender-mist hover:shadow-xl dark:from-moonlit-violet dark:to-moonlit-lavender text-white"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              New Team
+            </Button>
+          </div>
         </motion.div>
 
         <Tabs value={selectedView} onValueChange={(v) => setSelectedView(v as any)} className="space-y-6">
@@ -233,9 +243,23 @@ function TeamCard({ team, index }: { team: Team; index: number }) {
             >
               <Users className="w-8 h-8 text-white" />
             </div>
-            <Badge className="bg-rose-blush/10 dark:bg-moonlit-lavender/10 text-rose-blush dark:text-moonlit-lavender border-0">
-              {team.members.length} members
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-rose-blush/10 dark:bg-moonlit-lavender/10 text-rose-blush dark:text-moonlit-lavender border-0">
+                {team.members.length} members
+              </Badge>
+              <TeamEditor 
+                team={team} 
+                trigger={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-blush/10 dark:hover:bg-moonlit-lavender/10"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                }
+              />
+            </div>
           </div>
           
           <CardTitle className="text-2xl font-serif group-hover:text-rose-blush dark:group-hover:text-moonlit-lavender transition-colors">
@@ -272,6 +296,20 @@ function TeamCard({ team, index }: { team: Team; index: number }) {
               <span>{members.length} team members</span>
             </div>
           </div>
+
+          <TeamEditor 
+            team={team}
+            trigger={
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full mt-2 gap-2 hover:bg-rose-blush/10 dark:hover:bg-moonlit-lavender/10 hover:border-rose-blush dark:hover:border-moonlit-lavender"
+              >
+                <Pencil className="w-4 h-4" />
+                Edit Team
+              </Button>
+            }
+          />
         </CardContent>
       </Card>
     </motion.div>
