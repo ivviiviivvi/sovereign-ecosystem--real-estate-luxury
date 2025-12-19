@@ -1080,8 +1080,8 @@ Year 3: Market Leadership
 | **Ethos (Trust)** | 5/10 | D | ⚠️ Security theater |
 | **Blindspots** | 3/10 | F | 🚨 22 major gaps |
 | **Shatter-Points** | 2/10 | F | 🚨 7 critical risks |
-| **Bloom (Potential)** | 9/10 | A | ⭐️ Huge opportunity |
-| **Evolve (Vision)** | 8/10 | B | ⭐️ Clear path |
+| **Bloom (Potential)** | 9/10 | A | ✨ Huge opportunity |
+| **Evolve (Vision)** | 8/10 | B | 🚀 Clear path |
 
 **Overall System Grade: C- (5.5/10)**
 
