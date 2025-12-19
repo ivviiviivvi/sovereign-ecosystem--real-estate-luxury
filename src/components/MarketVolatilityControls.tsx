@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Settings, Play, Pause, Zap, Clock, Activity, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react'
 import { Card } from './ui/card'
@@ -50,7 +50,7 @@ const scenarios: Record<PresetScenario & string, ScenarioPreset> = {
   }
 }
 
-export function MarketVolatilityControls() {
+const MarketVolatilityControls = memo(function MarketVolatilityControls() {
   const config = useMarketConfig()
   const [isExpanded, setIsExpanded] = useState(false)
   const [volatility, setVolatility] = useState(config.volatility)
@@ -343,4 +343,6 @@ export function MarketVolatilityControls() {
       </AnimatePresence>
     </motion.div>
   )
-}
+})
+
+export { MarketVolatilityControls }

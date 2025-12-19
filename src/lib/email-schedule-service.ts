@@ -60,7 +60,7 @@ export const emailScheduleService = {
     const now = new Date()
     const [hours, minutes] = (schedule.time || '09:00').split(':').map(Number)
     
-    let next = new Date(now)
+    const next = new Date(now)
     next.setHours(hours, minutes, 0, 0)
 
     if (schedule.frequency === 'daily') {

@@ -143,7 +143,7 @@ export function MeasurementExport({
   const exportAsPDF = () => {
     const report = generateMeasurementReport()
     
-    let html = `
+    const html = `
 <!DOCTYPE html>
 <html>
 <head>

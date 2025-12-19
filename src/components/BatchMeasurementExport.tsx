@@ -226,7 +226,7 @@ export function BatchMeasurementExport({ properties, measurements }: BatchMeasur
   }
 
   const exportAsPDF = async (props: Property[], meas: Measurement[], name: string) => {
-    let html = `
+    const html = `
 <!DOCTYPE html>
 <html>
 <head>

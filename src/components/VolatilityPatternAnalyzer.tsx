@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, TrendingDown, Activity, Zap, AlertCircle } from 'lucide-react'
 import { Card } from './ui/card'
@@ -27,64 +27,17 @@ export function VolatilityPatternAnalyzer() {
   const [patternHistory, setPatternHistory] = useState<PatternHistory[]>([])
   const [recentValues, setRecentValues] = useState<number[]>([])
 
-  useEffect(() => {
-    if (tickers.length === 0) return
-
-    const avgValue = tickers.reduce((sum, t) => sum + t.value, 0) / tickers.length
+  const calculateVolatility = useCallback((values: number[]): number => {
+    if (values.length < 2) return 0
     
-    setRecentValues(prev => {
-      const updated = [...prev, avgValue].slice(-20)
-      
-      if (updated.length >= 10) {
-        const pattern = detectPattern(updated)
-        setCurrentPattern(pattern)
-        
-        if (pattern) {
-          const recentVolatility = calculateVolatility(updated.slice(-5))
-          const recent = updated.slice(-5)
-          const previous = updated.slice(-10, -5)
-          const recentAvg = recent.reduce((sum, v) => sum + v, 0) / recent.length
-          const previousAvg = previous.reduce((sum, v) => sum + v, 0) / previous.length
-          const trend = recentAvg - previousAvg
-          
-          const alertPattern: AlertPattern = {
-            type: pattern.type,
-            confidence: pattern.confidence,
-            description: pattern.description,
-            metrics: {
-              trend,
-              volatility: recentVolatility,
-              velocity: trend
-            }
-          }
-          
-          patternAlertService.addAlert(alertPattern)
-          
-          setPatternHistory(prevHistory => {
-            const newEntry: PatternHistory = {
-              timestamp: Date.now(),
-              pattern,
-              values: [...updated]
-            }
-            
-            const filtered = prevHistory.filter(
-              h => Date.now() - h.timestamp < 5 * 60 * 1000
-            )
-            
-            if (filtered.length === 0 || filtered[filtered.length - 1].pattern.type !== pattern.type) {
-              return [...filtered, newEntry]
-            }
-            
-            return filtered
-          })
-        }
-      }
-      
-      return updated
-    })
-  }, [tickers])
+    const mean = values.reduce((sum, v) => sum + v, 0) / values.length
+    const squaredDiffs = values.map(v => Math.pow(v - mean, 2))
+    const variance = squaredDiffs.reduce((sum, v) => sum + v, 0) / values.length
 
-  const detectPattern = (values: number[]): VolatilityPattern | null => {
+    return Math.sqrt(variance)
+  }, [])
+
+  const detectPattern = useCallback((values: number[]): VolatilityPattern | null => {
     if (values.length < 10) return null
 
     const recent = values.slice(-5)
@@ -107,7 +60,6 @@ export function VolatilityPatternAnalyzer() {
     const isBreakdown = recentAvg < previousAvg - 3 && recentVolatility > 2
     const isConsolidation = range < 1.5 && recentVolatility < 1
     
-    const previousMin = Math.min(...previous)
     const isReversal = previousAvg < 96 && recentAvg > 99 && trend > 2
 
     if (isBreakout) {
@@ -210,17 +162,64 @@ export function VolatilityPatternAnalyzer() {
     }
 
     return null
-  }
+  }, [calculateVolatility])
 
-  const calculateVolatility = (values: number[]): number => {
-    if (values.length < 2) return 0
+  useEffect(() => {
+    if (tickers.length === 0) return
+
+    const avgValue = tickers.reduce((sum, t) => sum + t.value, 0) / tickers.length
     
-    const mean = values.reduce((sum, v) => sum + v, 0) / values.length
-    const squaredDiffs = values.map(v => Math.pow(v - mean, 2))
-    const variance = squaredDiffs.reduce((sum, v) => sum + v, 0) / values.length
-    
-    return Math.sqrt(variance)
-  }
+    setRecentValues(prev => {
+      const updated = [...prev, avgValue].slice(-20)
+
+      if (updated.length >= 10) {
+        const pattern = detectPattern(updated)
+        setCurrentPattern(pattern)
+
+        if (pattern) {
+          const recentVolatility = calculateVolatility(updated.slice(-5))
+          const recent = updated.slice(-5)
+          const previous = updated.slice(-10, -5)
+          const recentAvg = recent.reduce((sum, v) => sum + v, 0) / recent.length
+          const previousAvg = previous.reduce((sum, v) => sum + v, 0) / previous.length
+          const trend = recentAvg - previousAvg
+
+          const alertPattern: AlertPattern = {
+            type: pattern.type,
+            confidence: pattern.confidence,
+            description: pattern.description,
+            metrics: {
+              trend,
+              volatility: recentVolatility,
+              velocity: trend
+            }
+          }
+
+          patternAlertService.addAlert(alertPattern)
+
+          setPatternHistory(prevHistory => {
+            const newEntry: PatternHistory = {
+              timestamp: Date.now(),
+              pattern,
+              values: [...updated]
+            }
+
+            const filtered = prevHistory.filter(
+              h => Date.now() - h.timestamp < 5 * 60 * 1000
+            )
+
+            if (filtered.length === 0 || filtered[filtered.length - 1].pattern.type !== pattern.type) {
+              return [...filtered, newEntry]
+            }
+
+            return filtered
+          })
+        }
+      }
+
+      return updated
+    })
+  }, [tickers, detectPattern, calculateVolatility])
 
   const formatTime = (timestamp: number): string => {
     const date = new Date(timestamp)

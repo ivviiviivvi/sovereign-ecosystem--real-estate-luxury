@@ -31,6 +31,17 @@ export function ClientFeed({ properties, onBack }: ClientFeedProps) {
 
   const currentProperty = properties[currentIndex]
 
+  if (!properties || properties.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center p-6">
+          <h2 className="text-2xl font-light mb-4">No properties available</h2>
+          <Button onClick={onBack}>Return to Menu</Button>
+        </div>
+      </div>
+    )
+  }
+
   const handleDragEnd = (event: any, info: PanInfo) => {
     if (info.offset.y < -100 && currentIndex < properties.length - 1) {
       soundManager.play('glassTap')

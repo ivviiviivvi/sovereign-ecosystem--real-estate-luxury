@@ -132,7 +132,7 @@ export async function detectLanguage(options: {
 } = {}): Promise<LanguageDetectionResult> {
   const { useGeolocation = false, fallback = 'en' } = options
   
-  let browserLang = detectLanguageFromBrowser()
+  const browserLang = detectLanguageFromBrowser()
   if (browserLang) {
     return {
       detected: browserLang,

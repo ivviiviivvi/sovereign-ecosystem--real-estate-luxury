@@ -18,7 +18,9 @@ export function MarketOverview({ properties = [] }: MarketOverviewProps) {
   const tickers = useMarketTickers()
 
   const averageChange =
-    tickers.reduce((sum, ticker) => sum + ticker.changePercent, 0) / tickers.length
+    tickers.length > 0
+      ? tickers.reduce((sum, ticker) => sum + ticker.changePercent, 0) / tickers.length
+      : 0
 
   const marketSentiment =
     averageChange > 1 ? 'bullish' : averageChange < -1 ? 'bearish' : 'neutral'
@@ -167,9 +169,11 @@ export function MarketOverview({ properties = [] }: MarketOverviewProps) {
                 Highest Gainer
               </p>
               <p className="text-champagne-gold font-semibold">
-                {tickers.reduce((max, ticker) =>
-                  ticker.changePercent > max.changePercent ? ticker : max
-                ).symbol}
+                {tickers.length > 0
+                  ? tickers.reduce((max, ticker) =>
+                      ticker.changePercent > max.changePercent ? ticker : max
+                    ).symbol
+                  : '-'}
               </p>
             </div>
             <div>
@@ -177,9 +181,11 @@ export function MarketOverview({ properties = [] }: MarketOverviewProps) {
                 Lowest Performer
               </p>
               <p className="text-champagne-gold font-semibold">
-                {tickers.reduce((min, ticker) =>
-                  ticker.changePercent < min.changePercent ? ticker : min
-                ).symbol}
+                {tickers.length > 0
+                  ? tickers.reduce((min, ticker) =>
+                      ticker.changePercent < min.changePercent ? ticker : min
+                    ).symbol
+                  : '-'}
               </p>
             </div>
             <div>
