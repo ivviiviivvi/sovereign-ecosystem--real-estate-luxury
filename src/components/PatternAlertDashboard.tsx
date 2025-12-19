@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { motion } from 'framer-motion'
 import { 
   TrendingUp, 
@@ -6,7 +6,6 @@ import {
   Activity, 
   Zap, 
   AlertCircle,
-  Filter,
   Download,
   Calendar
 } from 'lucide-react'
@@ -17,7 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
 import { usePatternAlerts } from '@/hooks/use-pattern-alerts'
 import { AlertPriority, PatternType } from '@/lib/pattern-alerts'
 
-export function PatternAlertDashboard() {
+const PatternAlertDashboard = memo(function PatternAlertDashboard() {
   const alerts = usePatternAlerts()
   const [filterPriority, setFilterPriority] = useState<AlertPriority | 'all'>('all')
   const [filterPattern, setFilterPattern] = useState<PatternType | 'all'>('all')
@@ -280,4 +279,6 @@ export function PatternAlertDashboard() {
       </div>
     </Card>
   )
-}
+})
+
+export { PatternAlertDashboard }

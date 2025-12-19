@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { motion } from 'framer-motion'
 import { Settings, Bell, Volume2, VolumeX, RotateCcw, Send } from 'lucide-react'
 import {
@@ -17,11 +17,11 @@ import { Card } from './ui/card'
 import { Badge } from './ui/badge'
 import { Separator } from './ui/separator'
 import { useAlertRules } from '@/hooks/use-pattern-alerts'
-import { patternAlertService, AlertRule, AlertPriority } from '@/lib/pattern-alerts'
+import { patternAlertService, AlertPriority } from '@/lib/pattern-alerts'
 import { toast } from 'sonner'
 import { NotificationDeliverySettings } from './NotificationDeliverySettings'
 
-export function PatternAlertSettings() {
+const PatternAlertSettings = memo(function PatternAlertSettings() {
   const rules = useAlertRules()
   const [open, setOpen] = useState(false)
   const [deliverySettingsOpen, setDeliverySettingsOpen] = useState(false)
@@ -260,4 +260,6 @@ export function PatternAlertSettings() {
     />
     </>
   )
-}
+})
+
+export { PatternAlertSettings }

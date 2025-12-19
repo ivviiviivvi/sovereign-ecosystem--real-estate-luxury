@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo } from 'react'
 import { Property } from '@/lib/types'
 import { marketDataService } from '@/lib/market-data'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -9,7 +9,7 @@ interface PortfolioValueTrackerProps {
   properties: Property[]
 }
 
-export function PortfolioValueTracker({ properties }: PortfolioValueTrackerProps) {
+const PortfolioValueTracker = memo(function PortfolioValueTracker({ properties }: PortfolioValueTrackerProps) {
   const [portfolioValue, setPortfolioValue] = useState(0)
   const [totalChange, setTotalChange] = useState(0)
   const [totalChangePercent, setTotalChangePercent] = useState(0)
@@ -131,4 +131,6 @@ export function PortfolioValueTracker({ properties }: PortfolioValueTrackerProps
       </div>
     </Card>
   )
-}
+})
+
+export { PortfolioValueTracker }
