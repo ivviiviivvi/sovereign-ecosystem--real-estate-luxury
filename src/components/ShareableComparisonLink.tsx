@@ -95,7 +95,8 @@ export function ShareableComparisonLink({
 
   const shareViaWhatsApp = () => {
     const text = `Check out this property comparison: ${propertyA.title} vs ${propertyB.title}\n\n${shareLink}\n\nExpires in ${expiryTime} hours`
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+    // Security: Add noopener,noreferrer to prevent tabnabbing
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer')
     soundManager.play('glassTap')
   }
 
